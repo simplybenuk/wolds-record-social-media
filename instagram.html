@@ -14,13 +14,16 @@
       --panel:#ffffff;
       --border:#d8d3c8;
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:#eee9df;
       color:var(--navy);
     }
+
     header{
       padding:18px 24px;
       background:var(--sand);
@@ -30,15 +33,18 @@
       align-items:center;
       gap:16px;
     }
+
     h1{font-size:18px;margin:0;color:var(--forest)}
+
     .app{
       display:grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 390px 1fr;
       gap:24px;
       padding:24px;
       max-width:1400px;
       margin:0 auto;
     }
+
     .controls{
       background:var(--panel);
       border:1px solid var(--border);
@@ -47,7 +53,9 @@
       box-shadow:0 8px 24px rgba(20,40,54,.08);
       align-self:start;
     }
+
     .field{margin-bottom:14px}
+
     label{
       display:block;
       font-weight:700;
@@ -55,6 +63,7 @@
       margin-bottom:6px;
       color:var(--navy);
     }
+
     input, textarea, select{
       width:100%;
       border:1px solid var(--border);
@@ -64,8 +73,11 @@
       background:#fff;
       color:var(--navy);
     }
+
     textarea{min-height:88px;resize:vertical}
+
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
     button{
       border:0;
       border-radius:12px;
@@ -75,12 +87,20 @@
       background:var(--forest);
       color:var(--sand);
     }
+
     button.secondary{
       background:transparent;
       color:var(--forest);
       border:1px solid var(--forest);
     }
-    .hint{font-size:12px;color:var(--sage);line-height:1.4;margin-top:6px}
+
+    .hint{
+      font-size:12px;
+      color:var(--sage);
+      line-height:1.4;
+      margin-top:6px;
+    }
+
     .previewWrap{
       display:flex;
       flex-direction:column;
@@ -88,24 +108,46 @@
       gap:14px;
       min-width:0;
     }
+
+    .canvasShell{
+      width:100%;
+      max-height:82vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      overflow:auto;
+      padding:8px;
+    }
+
     canvas{
-      width:min(100%,540px);
+      width:auto;
       height:auto;
+      max-width:min(100%,540px);
+      max-height:80vh;
       border-radius:18px;
       box-shadow:0 14px 40px rgba(20,40,54,.18);
       background:var(--sand);
     }
+
     .buttons{display:flex;gap:10px;flex-wrap:wrap}
+
     .swatches{
       display:grid;
       grid-template-columns:repeat(5,1fr);
       gap:6px;
       margin:8px 0 2px;
     }
-    .swatch{height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.1)}
+
+    .swatch{
+      height:28px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.1);
+    }
+
     @media(max-width:900px){
       .app{grid-template-columns:1fr}
       .controls{order:2}
+      header{align-items:flex-start;flex-direction:column}
     }
   </style>
 </head>
@@ -117,6 +159,15 @@
 
   <main class="app">
     <section class="controls">
+      <div class="field">
+        <label for="aspectRatio">Post size</label>
+        <select id="aspectRatio">
+          <option value="portrait" selected>Portrait feed — 1080 × 1350</option>
+          <option value="square">Square feed — 1080 × 1080</option>
+          <option value="landscape">Landscape feed — 1080 × 566</option>
+        </select>
+      </div>
+
       <div class="field">
         <label for="template">Template</label>
         <select id="template">
@@ -172,7 +223,7 @@ Not everyone.</textarea>
           <input id="imageOpacity" type="range" min="0" max="100" value="18" />
         </div>
         <div class="field">
-          <label for="safeMode">Extra whitespace</label>
+          <label for="safeMode">Layout density</label>
           <select id="safeMode">
             <option value="normal">Normal</option>
             <option value="airy" selected>Airy</option>
@@ -198,13 +249,15 @@ Not everyone.</textarea>
       </div>
 
       <p class="hint">
-        Tip: create each carousel slide, download it, then upload the PNGs to Instagram in order.
-        Best size: 1080 × 1350.
+        Portrait is best for feed carousels. Square is safer for grid aesthetics.
+        Landscape exists because Instagram allows it, not because it is your best mate.
       </p>
     </section>
 
     <section class="previewWrap">
-      <canvas id="canvas" width="1080" height="1350"></canvas>
+      <div class="canvasShell">
+        <canvas id="canvas" width="1080" height="1350"></canvas>
+      </div>
       <div class="buttons">
         <button id="download2">Download PNG</button>
       </div>
@@ -213,7 +266,11 @@ Not everyone.</textarea>
 
 <script>
 const C = {
-  forest:"#2F5933", sand:"#F4F1EC", navy:"#142836", amber:"#D6A859", sage:"#666E6B"
+  forest:"#2F5933",
+  sand:"#F4F1EC",
+  navy:"#142836",
+  amber:"#D6A859",
+  sage:"#666E6B"
 };
 
 const canvas = document.getElementById("canvas");
@@ -222,12 +279,47 @@ let logoImg = null;
 let photoImg = null;
 
 const $ = id => document.getElementById(id);
-const controls = ["template","kicker","headline","emphasis","body","footer","imageOpacity","safeMode"];
+
+const controls = [
+  "aspectRatio",
+  "template",
+  "kicker",
+  "headline",
+  "emphasis",
+  "body",
+  "footer",
+  "imageOpacity",
+  "safeMode"
+];
+
 controls.forEach(id => $(id).addEventListener("input", draw));
+
+function setCanvasSize(){
+  const ratio = $("aspectRatio").value;
+
+  if(ratio === "square"){
+    canvas.width = 1080;
+    canvas.height = 1080;
+  } else if(ratio === "landscape"){
+    canvas.width = 1080;
+    canvas.height = 566;
+  } else {
+    canvas.width = 1080;
+    canvas.height = 1350;
+  }
+}
+
+function scaleToHeight(value, H){
+  return value * (H / 1350);
+}
 
 function loadImageFromInput(input, cb){
   const file = input.files && input.files[0];
-  if(!file){ cb(null); return; }
+  if(!file){
+    cb(null);
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = e => {
     const img = new Image();
@@ -237,11 +329,23 @@ function loadImageFromInput(input, cb){
   reader.readAsDataURL(file);
 }
 
-$("logoUpload").addEventListener("change", () => loadImageFromInput($("logoUpload"), img => { logoImg = img; draw(); }));
-$("imageUpload").addEventListener("change", () => loadImageFromInput($("imageUpload"), img => { photoImg = img; draw(); }));
+$("logoUpload").addEventListener("change", () => {
+  loadImageFromInput($("logoUpload"), img => {
+    logoImg = img;
+    draw();
+  });
+});
+
+$("imageUpload").addEventListener("change", () => {
+  loadImageFromInput($("imageUpload"), img => {
+    photoImg = img;
+    draw();
+  });
+});
 
 $("template").addEventListener("change", () => {
   const t = $("template").value;
+
   const presets = {
     hook:{
       headline:"Built for dogs.\nNot horses.\nNot everyone.",
@@ -268,10 +372,12 @@ $("template").addEventListener("change", () => {
       footer:"Join the waitlist via the link in bio."
     }
   };
-  Object.assign($("headline"), { value: presets[t].headline });
+
+  $("headline").value = presets[t].headline;
   $("emphasis").value = presets[t].emphasis;
   $("body").value = presets[t].body;
   $("footer").value = presets[t].footer;
+
   draw();
 });
 
@@ -284,8 +390,11 @@ $("download2").addEventListener("click", download);
 
 function download(){
   draw();
+
   const link = document.createElement("a");
-  const slug = $("template").value + "-" + new Date().toISOString().slice(0,10);
+  const ratio = $("aspectRatio").value;
+  const slug = `${$("template").value}-${ratio}-${new Date().toISOString().slice(0,10)}`;
+
   link.download = `wolds-record-instagram-${slug}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
@@ -295,8 +404,9 @@ function coverImage(img, x, y, w, h, opacity){
   const scale = Math.max(w / img.width, h / img.height);
   const iw = img.width * scale;
   const ih = img.height * scale;
-  const ix = x + (w - iw)/2;
-  const iy = y + (h - ih)/2;
+  const ix = x + (w - iw) / 2;
+  const iy = y + (h - ih) / 2;
+
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.drawImage(img, ix, iy, iw, ih);
@@ -305,11 +415,14 @@ function coverImage(img, x, y, w, h, opacity){
 
 function wrapLineByWords(text, maxWidth, font){
   ctx.font = font;
+
   const words = text.split(" ");
   const lines = [];
   let line = "";
+
   for(const word of words){
-    const test = line ? line + " " + word : word;
+    const test = line ? `${line} ${word}` : word;
+
     if(ctx.measureText(test).width > maxWidth && line){
       lines.push(line);
       line = word;
@@ -317,75 +430,132 @@ function wrapLineByWords(text, maxWidth, font){
       line = test;
     }
   }
+
   if(line) lines.push(line);
   return lines;
 }
 
 function drawHighlightedLine(line, x, y, font, normalColour, highlightWord, highlightColour){
   ctx.font = font;
+
+  if(!highlightWord){
+    ctx.fillStyle = normalColour;
+    ctx.fillText(line, x, y);
+    return;
+  }
+
   const parts = line.split(new RegExp(`(${escapeRegExp(highlightWord)})`, "gi"));
   let xx = x;
+
   for(const part of parts){
     if(!part) continue;
-    const isHit = highlightWord && part.toLowerCase() === highlightWord.toLowerCase();
+
+    const isHit = part.toLowerCase() === highlightWord.toLowerCase();
     ctx.fillStyle = isHit ? highlightColour : normalColour;
     ctx.fillText(part, xx, y);
     xx += ctx.measureText(part).width;
   }
 }
 
-function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function escapeRegExp(s){
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function draw(){
+  setCanvasSize();
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const ratio = $("aspectRatio").value;
   const safe = $("safeMode").value;
+
+  const heightScale = H / 1350;
+
   const margin = safe === "bold" ? 78 : safe === "airy" ? 118 : 96;
-  const headlineSize = safe === "bold" ? 92 : safe === "airy" ? 78 : 84;
-  const lineHeight = headlineSize * 1.08;
+  const maxTextWidth = W - (margin * 2);
 
-  ctx.clearRect(0,0,1080,1350);
-  ctx.fillStyle = C.sand;
-  ctx.fillRect(0,0,1080,1350);
+  let headlineSize;
 
-  if(photoImg){
-    const opacity = Number($("imageOpacity").value) / 100;
-    coverImage(photoImg, 560, 640, 520, 710, opacity);
+  if(ratio === "landscape"){
+    headlineSize = safe === "bold" ? 58 : safe === "airy" ? 48 : 52;
+  } else if(ratio === "square"){
+    headlineSize = safe === "bold" ? 78 : safe === "airy" ? 66 : 72;
+  } else {
+    headlineSize = safe === "bold" ? 92 : safe === "airy" ? 78 : 84;
   }
 
-  // subtle brand shapes
+  const bodySize = ratio === "landscape" ? 25 : ratio === "square" ? 32 : 38;
+  const footerSize = ratio === "landscape" ? 22 : ratio === "square" ? 26 : 30;
+
+  const lineHeight = headlineSize * 1.08;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = C.sand;
+  ctx.fillRect(0, 0, W, H);
+
+  // Optional image
+  if(photoImg){
+    const opacity = Number($("imageOpacity").value) / 100;
+
+    if(ratio === "landscape"){
+      coverImage(photoImg, W * 0.62, H * 0.08, W * 0.38, H * 0.92, opacity);
+    } else {
+      coverImage(photoImg, W * 0.52, H * 0.47, W * 0.48, H * 0.53, opacity);
+    }
+  }
+
+  // Subtle brand shapes
   ctx.save();
   ctx.globalAlpha = 0.10;
   ctx.fillStyle = C.forest;
-  ctx.beginPath(); ctx.arc(970, 110, 220, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(W - 110, scaleToHeight(110, H), 220 * heightScale, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.fillStyle = C.amber;
-  ctx.beginPath(); ctx.arc(990, 1260, 170, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(W - 90, H - scaleToHeight(90, H), 170 * heightScale, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 
   // Logo or text mark
+  const topY = ratio === "landscape" ? 48 : 64;
+  const logoH = ratio === "landscape" ? 50 : 82;
+
   if(logoImg){
-    const logoH = 82;
-    const ratio = logoImg.width / logoImg.height;
-    ctx.drawImage(logoImg, margin, 64, logoH * ratio, logoH);
+    const logoRatio = logoImg.width / logoImg.height;
+    ctx.drawImage(logoImg, margin, topY, logoH * logoRatio, logoH);
   } else {
-    ctx.font = "700 30px Montserrat, Arial, sans-serif";
+    ctx.font = `700 ${ratio === "landscape" ? 24 : 30}px Montserrat, Arial, sans-serif`;
     ctx.fillStyle = C.forest;
-    ctx.fillText($("kicker").value, margin, 102);
+    ctx.fillText($("kicker").value, margin, topY + 38);
   }
 
   // Kicker if logo exists
   if(logoImg){
-    ctx.font = "700 24px Open Sans, Arial, sans-serif";
+    ctx.font = `700 ${ratio === "landscape" ? 18 : 24}px Open Sans, Arial, sans-serif`;
     ctx.fillStyle = C.sage;
-    ctx.fillText($("kicker").value, margin, 172);
+    ctx.fillText($("kicker").value, margin, topY + logoH + 28);
   }
 
   // Headline
   const headline = $("headline").value.split("\n");
   const emphasis = $("emphasis").value.trim();
   const headlineFont = `800 ${headlineSize}px Montserrat, Arial, sans-serif`;
-  let y = safe === "airy" ? 360 : 320;
+
+  let y;
+
+  if(ratio === "landscape"){
+    y = 175;
+  } else if(ratio === "square"){
+    y = safe === "airy" ? 285 : 250;
+  } else {
+    y = safe === "airy" ? 360 : 320;
+  }
 
   for(const rawLine of headline){
-    const wrapped = wrapLineByWords(rawLine, 860, headlineFont);
+    const wrapped = wrapLineByWords(rawLine, maxTextWidth, headlineFont);
+
     for(const line of wrapped){
       drawHighlightedLine(line, margin, y, headlineFont, C.navy, emphasis, C.forest);
       y += lineHeight;
@@ -393,38 +563,52 @@ function draw(){
   }
 
   // Body
-  y += 54;
-  ctx.font = "400 38px Open Sans, Arial, sans-serif";
+  y += ratio === "landscape" ? 24 : 54;
+
+  const bodyFont = `400 ${bodySize}px Open Sans, Arial, sans-serif`;
+  ctx.font = bodyFont;
   ctx.fillStyle = C.navy;
+
   const bodyLines = [];
-  $("body").value.split("\n").forEach(p => bodyLines.push(...wrapLineByWords(p, 780, "400 38px Open Sans, Arial, sans-serif")));
+  $("body").value.split("\n").forEach(p => {
+    bodyLines.push(...wrapLineByWords(p, ratio === "landscape" ? W * 0.54 : maxTextWidth * 0.92, bodyFont));
+  });
+
   for(const line of bodyLines){
+    if(y > H - 160) break;
     ctx.fillText(line, margin, y);
-    y += 56;
+    y += bodySize * 1.48;
   }
 
   // Divider
+  const dividerY = ratio === "landscape" ? H - 112 : H - scaleToHeight(220, H);
+
   ctx.strokeStyle = C.forest;
-  ctx.lineWidth = 5;
+  ctx.lineWidth = ratio === "landscape" ? 4 : 5;
   ctx.beginPath();
-  ctx.moveTo(margin, 1130);
-  ctx.lineTo(margin + 170, 1130);
+  ctx.moveTo(margin, dividerY);
+  ctx.lineTo(margin + 170, dividerY);
   ctx.stroke();
 
   // Footer
-  ctx.font = "700 30px Open Sans, Arial, sans-serif";
+  const footerFont = `700 ${footerSize}px Open Sans, Arial, sans-serif`;
+  ctx.font = footerFont;
   ctx.fillStyle = C.forest;
-  const footerLines = wrapLineByWords($("footer").value, 760, "700 30px Open Sans, Arial, sans-serif");
-  let fy = 1195;
+
+  const footerLines = wrapLineByWords($("footer").value, ratio === "landscape" ? W * 0.58 : maxTextWidth * 0.88, footerFont);
+
+  let fy = dividerY + (ratio === "landscape" ? 44 : 65);
+
   for(const line of footerLines){
+    if(fy > H - 48) break;
     ctx.fillText(line, margin, fy);
-    fy += 44;
+    fy += footerSize * 1.45;
   }
 
-  // tiny website placeholder
-  ctx.font = "600 22px Open Sans, Arial, sans-serif";
+  // Handle
+  ctx.font = `600 ${ratio === "landscape" ? 17 : 22}px Open Sans, Arial, sans-serif`;
   ctx.fillStyle = C.sage;
-  ctx.fillText("@woldsrecord", margin, 1292);
+  ctx.fillText("@woldsrecord", margin, H - 44);
 }
 
 draw();
