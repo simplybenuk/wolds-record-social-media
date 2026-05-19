@@ -18,11 +18,11 @@ These make the profile look legitimate before outreach/following.
   - Simple brand introduction
   - “Record keeping made for dogs. Not horses.”
 
-- [ ] Post 2 — Why we built Wolds Record
+- [x] Post 2 — Why we built Wolds Record
   - Therapist-focused positioning
   - Explain the niche problem
 
-- [ ] Post 3 — The admin chaos therapists deal with
+- [x] Post 3 — The admin chaos therapists deal with
   - Notes
   - PDFs
   - WhatsApp photos
