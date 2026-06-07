@@ -179,6 +179,28 @@
       </div>
 
       <div class="field">
+        <label for="postsUpload">Load posts JSON</label>
+        <input id="postsUpload" type="file" accept="application/json,.json" />
+        <div class="hint">Use the format in posts.example.json.</div>
+      </div>
+
+      <div class="buttons">
+        <button class="secondary" id="openJson" type="button">Open editable JSON</button>
+      </div>
+
+      <div class="field">
+        <label for="postSelect">Loaded post</label>
+        <select id="postSelect" disabled>
+          <option value="">No posts loaded</option>
+        </select>
+      </div>
+
+      <div class="buttons">
+        <button class="secondary" id="prevPost" type="button">Previous</button>
+        <button class="secondary" id="nextPost" type="button">Next</button>
+      </div>
+
+      <div class="field">
         <label for="kicker">Small label</label>
         <input id="kicker" value="Wolds Record" />
       </div>
@@ -219,6 +241,17 @@ Not everyone.</textarea>
 
       <div class="row">
         <div class="field">
+          <label for="logoPath">Logo path</label>
+          <input id="logoPath" placeholder="assets/logos/wolds-record.png" />
+        </div>
+        <div class="field">
+          <label for="photoPath">Optional image path</label>
+          <input id="photoPath" placeholder="assets/photos/example.jpg" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
           <label for="imageOpacity">Image opacity</label>
           <input id="imageOpacity" type="range" min="0" max="100" value="18" />
         </div>
@@ -243,9 +276,30 @@ Not everyone.</textarea>
         </div>
       </div>
 
+      <div class="field">
+        <label for="caption">Caption</label>
+        <textarea id="caption"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="hashtags">Hashtags</label>
+        <textarea id="hashtags" placeholder="caninemassage&#10;caninetherapy"></textarea>
+        <div class="hint">Use one per line or space-separated tags.</div>
+      </div>
+
+      <div class="field">
+        <label for="altText">Alt text</label>
+        <textarea id="altText"></textarea>
+      </div>
+
       <div class="buttons">
         <button id="download">Download PNG</button>
         <button class="secondary" id="reset">Reset text</button>
+      </div>
+
+      <div class="buttons">
+        <button class="secondary" id="savePost" type="button">Save current post</button>
+        <button class="secondary" id="saveJson" type="button">Save posts.json</button>
       </div>
 
       <p class="hint">
@@ -277,6 +331,11 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let logoImg = null;
 let photoImg = null;
+let loadedPosts = [];
+let loadedPostsData = null;
+let postsFileHandle = null;
+let loadingPostAssets = Promise.resolve();
+let activePostIndex = 0;
 
 const $ = id => document.getElementById(id);
 
@@ -288,8 +347,13 @@ const controls = [
   "emphasis",
   "body",
   "footer",
+  "logoPath",
+  "photoPath",
   "imageOpacity",
-  "safeMode"
+  "safeMode",
+  "caption",
+  "hashtags",
+  "altText"
 ];
 
 controls.forEach(id => $(id).addEventListener("input", draw));
@@ -343,6 +407,265 @@ $("imageUpload").addEventListener("change", () => {
   });
 });
 
+$("logoPath").addEventListener("change", async () => {
+  logoImg = await loadImageFromPath($("logoPath").value);
+  draw();
+});
+
+$("photoPath").addEventListener("change", async () => {
+  photoImg = await loadImageFromPath($("photoPath").value);
+  draw();
+});
+
+$("postsUpload").addEventListener("change", () => {
+  const file = $("postsUpload").files && $("postsUpload").files[0];
+
+  if(!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      const posts = Array.isArray(data) ? data : data.posts;
+
+      if(!Array.isArray(posts)){
+        throw new Error("Expected a JSON array or an object with a posts array.");
+      }
+
+      postsFileHandle = null;
+      loadedPostsData = data;
+      loadedPosts = posts;
+      populatePostSelect();
+    } catch(err){
+      alert(`Could not load posts JSON: ${err.message}`);
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+$("postSelect").addEventListener("change", () => {
+  saveCurrentPostFromForm();
+  activePostIndex = Number($("postSelect").value);
+  const post = loadedPosts[activePostIndex];
+  if(post) applyPost(post);
+});
+
+$("openJson").addEventListener("click", openPostsJsonWithFileHandle);
+
+$("prevPost").addEventListener("click", () => {
+  movePostSelection(-1);
+});
+
+$("nextPost").addEventListener("click", () => {
+  movePostSelection(1);
+});
+
+$("savePost").addEventListener("click", () => {
+  saveCurrentPostFromForm();
+});
+
+$("saveJson").addEventListener("click", async () => {
+  saveCurrentPostFromForm();
+  await savePostsJson();
+});
+
+async function openPostsJsonWithFileHandle(){
+  if(!window.showOpenFilePicker){
+    $("postsUpload").click();
+    return;
+  }
+
+  try{
+    const [handle] = await window.showOpenFilePicker({
+      types: [
+        {
+          description: "JSON files",
+          accept: {
+            "application/json": [".json"]
+          }
+        }
+      ],
+      multiple: false
+    });
+
+    const file = await handle.getFile();
+    const data = JSON.parse(await file.text());
+    const posts = Array.isArray(data) ? data : data.posts;
+
+    if(!Array.isArray(posts)){
+      throw new Error("Expected a JSON array or an object with a posts array.");
+    }
+
+    postsFileHandle = handle;
+    loadedPostsData = data;
+    loadedPosts = posts;
+    populatePostSelect();
+  } catch(err){
+    if(err.name !== "AbortError"){
+      alert(`Could not open posts JSON: ${err.message}`);
+    }
+  }
+}
+
+function movePostSelection(direction){
+  if(!loadedPosts.length) return;
+
+  saveCurrentPostFromForm();
+
+  const select = $("postSelect");
+  const nextIndex = Math.max(0, Math.min(loadedPosts.length - 1, select.selectedIndex + direction));
+  select.selectedIndex = nextIndex;
+  activePostIndex = nextIndex;
+  applyPost(loadedPosts[nextIndex]);
+}
+
+function populatePostSelect(){
+  const select = $("postSelect");
+  select.innerHTML = "";
+
+  if(!loadedPosts.length){
+    select.disabled = true;
+    select.append(new Option("No posts loaded", ""));
+    return;
+  }
+
+  loadedPosts.forEach((post, index) => {
+    const label = post.title || post.headline || post.id || `Post ${index + 1}`;
+    select.append(new Option(label.replace(/\s+/g, " ").trim(), String(index)));
+  });
+
+  select.disabled = false;
+  select.selectedIndex = 0;
+  activePostIndex = 0;
+  applyPost(loadedPosts[0]);
+}
+
+function hashtagsToTextarea(hashtags){
+  if(Array.isArray(hashtags)) return hashtags.join("\n");
+  return hashtags || "";
+}
+
+function textareaToHashtags(value){
+  return value
+    .split(/\s+/)
+    .map(tag => tag.trim())
+    .filter(Boolean)
+    .map(tag => tag.replace(/^#/, ""));
+}
+
+async function loadImageFromPath(path){
+  const trimmed = (path || "").trim();
+
+  if(!trimmed) return null;
+
+  let src = trimmed;
+
+  try{
+    if(!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith("data:")){
+      const response = await fetch(trimmed);
+      const blob = await response.blob();
+      src = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    }
+  } catch(err){
+    console.warn(`Could not embed image before drawing: ${trimmed}`);
+  }
+
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      console.warn(`Could not load image: ${trimmed}`);
+      resolve(null);
+    };
+    img.src = src;
+  });
+}
+
+async function applyPost(post){
+  if(post.aspectRatio) $("aspectRatio").value = post.aspectRatio;
+  if(post.template) $("template").value = post.template;
+  if(post.kicker) $("kicker").value = post.kicker;
+  if(post.headline) $("headline").value = post.headline;
+  if(post.emphasis !== undefined) $("emphasis").value = post.emphasis;
+  if(post.body !== undefined) $("body").value = post.body;
+  if(post.footer !== undefined) $("footer").value = post.footer;
+  if(post.logoPath !== undefined) $("logoPath").value = post.logoPath;
+  if(post.photoPath !== undefined) $("photoPath").value = post.photoPath;
+  if(post.imageOpacity !== undefined) $("imageOpacity").value = post.imageOpacity;
+  if(post.safeMode) $("safeMode").value = post.safeMode;
+  if(post.caption !== undefined) $("caption").value = post.caption;
+  if(post.hashtags !== undefined) $("hashtags").value = hashtagsToTextarea(post.hashtags);
+  if(post.altText !== undefined) $("altText").value = post.altText;
+
+  loadingPostAssets = Promise.all([
+    loadImageFromPath(post.logoPath),
+    loadImageFromPath(post.photoPath)
+  ]).then(([loadedLogo, loadedPhoto]) => {
+    logoImg = loadedLogo;
+    photoImg = loadedPhoto;
+  });
+
+  await loadingPostAssets;
+  draw();
+}
+
+function saveCurrentPostFromForm(){
+  const post = loadedPosts[activePostIndex];
+
+  if(!post) return;
+
+  post.aspectRatio = $("aspectRatio").value;
+  post.template = $("template").value;
+  post.kicker = $("kicker").value;
+  post.headline = $("headline").value;
+  post.emphasis = $("emphasis").value;
+  post.body = $("body").value;
+  post.footer = $("footer").value;
+  post.logoPath = $("logoPath").value.trim();
+  post.photoPath = $("photoPath").value.trim();
+  post.imageOpacity = Number($("imageOpacity").value);
+  post.safeMode = $("safeMode").value;
+  post.caption = $("caption").value;
+  post.hashtags = textareaToHashtags($("hashtags").value);
+  post.altText = $("altText").value;
+}
+
+async function savePostsJson(){
+  if(!loadedPostsData){
+    alert("No posts JSON loaded.");
+    return;
+  }
+
+  const json = `${JSON.stringify(loadedPostsData, null, 2)}\n`;
+
+  if(postsFileHandle && postsFileHandle.createWritable){
+    const writable = await postsFileHandle.createWritable();
+    await writable.write(json);
+    await writable.close();
+    alert("Saved posts JSON.");
+    return;
+  }
+
+  const blob = new Blob([json], { type: "application/json" });
+  const link = document.createElement("a");
+  link.download = "posts.json";
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+window.renderPostForExport = async post => {
+  await applyPost(post);
+  await loadingPostAssets;
+  return canvas.toDataURL("image/png");
+};
+
 $("template").addEventListener("change", () => {
   const t = $("template").value;
 
@@ -393,9 +716,12 @@ function download(){
 
   const link = document.createElement("a");
   const ratio = $("aspectRatio").value;
-  const slug = `${$("template").value}-${ratio}-${new Date().toISOString().slice(0,10)}`;
+  const selectedPost = loadedPosts[Number($("postSelect").value)];
+  const slug = selectedPost && selectedPost.id
+    ? selectedPost.id
+    : `${$("template").value}-${ratio}-${new Date().toISOString().slice(0,10)}`;
 
-  link.download = `wolds-record-instagram-${slug}.png`;
+  link.download = `${slug}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }

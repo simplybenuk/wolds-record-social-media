@@ -1,5 +1,170 @@
 # Wolds Record — Initial Instagram Content Plan
 
+## Automation v0
+
+This repo now supports a lightweight draft pipeline:
+
+```text
+posts.json
+↓
+instagram.html renders the image locally
+↓
+Ben / Olivia review and download PNG
+↓
+publicImageUrl is added once the PNG is hosted publicly
+↓
+scripts/create-buffer-draft.mjs sends the approved post to Buffer as a draft
+```
+
+### Local builder
+
+Open `instagram.html` in a browser, choose **Load posts JSON**, and select `posts.example.json` or your own `posts.json`.
+
+The selected post populates the existing canvas controls. You can still edit fields manually before downloading the PNG.
+
+For Chrome-based browsers, use **Open editable JSON** to open `posts.json` with write access. Then you can:
+
+- cycle posts with Previous / Next
+- edit headline, body, footer, caption, hashtags, alt text, logo path, and optional image path
+- click **Save current post** to update the in-memory JSON
+- click **Save posts.json** to write back to disk
+
+If the browser does not support direct file saving, **Save posts.json** downloads an updated JSON file instead.
+
+Store reusable visual assets in:
+
+```text
+assets/logos/
+assets/photos/
+```
+
+Then reference them from a post:
+
+```json
+"logoPath": "assets/logos/wolds-record.png",
+"photoPath": "assets/photos/therapy-session.jpg"
+```
+
+### Buffer draft script
+
+Copy `.env.example` to `.env` and fill in:
+
+```text
+BUFFER_API_KEY=...
+BUFFER_CHANNEL_ID=...
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+Install the local Node dependency for Playwright rendering:
+
+```bash
+npm install
+```
+
+The render script uses `/usr/bin/google-chrome` by default. Override it if needed:
+
+```text
+PLAYWRIGHT_CHROME_PATH=/path/to/chrome
+```
+
+Create your working content file:
+
+```bash
+cp posts.example.json posts.json
+```
+
+Find your real Buffer channel ID:
+
+```bash
+node scripts/list-buffer-channels.mjs
+```
+
+Use the `id=...` value for the Instagram channel as `BUFFER_CHANNEL_ID`. This is not the Instagram handle.
+
+Dry-run a post before sending anything to Buffer:
+
+```bash
+node scripts/create-buffer-draft.mjs posts.json wolds-record-004-workflow --dry-run
+```
+
+Send it to Buffer as a draft:
+
+```bash
+node scripts/create-buffer-draft.mjs posts.json wolds-record-004-workflow
+```
+
+Send it and record the returned Buffer post ID in `posts.json`:
+
+```bash
+node scripts/create-buffer-draft.mjs posts.json wolds-record-004-workflow --write-back
+```
+
+Check which posts are ready, blocked, or already sent:
+
+```bash
+node scripts/check-posts.mjs posts.json
+```
+
+Render, upload to Cloudinary, and update `posts.json` in one step:
+
+```bash
+node scripts/prepare-post.mjs posts.json wolds-record-005-dog-profile
+```
+
+Dry-run the Cloudinary step without uploading:
+
+```bash
+node scripts/prepare-post.mjs posts.json wolds-record-005-dog-profile --dry-run
+```
+
+Run the steps separately if needed:
+
+```bash
+node scripts/render-post.mjs posts.json wolds-record-005-dog-profile
+node scripts/upload-cloudinary.mjs posts.json wolds-record-005-dog-profile --write-back
+```
+
+Process multiple posts at once:
+
+```bash
+node scripts/process-posts.mjs posts.json --prepare --limit=10
+node scripts/process-posts.mjs posts.json --send-buffer --limit=10
+```
+
+Prepare and send in one run:
+
+```bash
+node scripts/process-posts.mjs posts.json --all --limit=10
+```
+
+Dry-run the batch flow first:
+
+```bash
+node scripts/process-posts.mjs posts.json --all --limit=10 --dry-run
+```
+
+Mark a post manually without sending anything to Buffer:
+
+```bash
+node scripts/mark-post-status.mjs posts.json wolds-record-004-workflow sent_to_buffer --buffer-post-id=BUFFER_POST_ID
+```
+
+If you do not know the Buffer post ID, you can omit `--buffer-post-id` and still mark the local status.
+
+Buffer cannot fetch local files from `generated/`. For image posts, upload the PNG to a public media host first, then set `publicImageUrl` on the post.
+
+Instagram-specific note: Buffer requires Instagram drafts to include at least one image or video and a post type. Use:
+
+```json
+"service": "instagram",
+"instagramType": "post",
+"publicImageUrl": "https://..."
+```
+
+---
+
 Goal:
 Make the account feel:
 - active

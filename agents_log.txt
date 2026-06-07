@@ -1,0 +1,46 @@
+2026-06-06 21:03:00 BST
+- Added JSON-driven social post workflow around `instagram.html`.
+- Added `posts.example.json` and working `posts.json` format for draft posts.
+- Added Buffer helper scripts: `list-buffer-channels.mjs`, `create-buffer-draft.mjs`, `check-posts.mjs`, and `mark-post-status.mjs`.
+- Updated README and automation plan with Buffer GraphQL, Cloudinary/public media URL, Instagram metadata, and local status workflow notes.
+- Verified script syntax with `node --check`; verified dry-run payloads and readiness checks locally.
+- Manual follow-up: keep adding Cloudinary `publicImageUrl` values before sending Instagram drafts to Buffer.
+
+2026-06-06 21:08:14 BST
+- Updated `.env.example` with `BUFFER_CHANNEL_SERVICE` and Cloudinary placeholders needed for the planned render/upload automation.
+- Manual follow-up: copy the new Cloudinary variables into `.env` with real account values before adding the upload script.
+
+2026-06-06 21:19:09 BST
+- Added Playwright/Cloudinary automation: `render-post.mjs`, `upload-cloudinary.mjs`, and `prepare-post.mjs`.
+- Added `package.json` with `playwright-core` and generated `package-lock.json` via `npm install`.
+- Exposed `window.renderPostForExport` in `instagram.html` for scriptable canvas exports.
+- Ran real prepare for `wolds-record-005-dog-profile`; rendered PNG to `generated/`, uploaded it to Cloudinary, and wrote `publicImageUrl`, `cloudinaryPublicId`, `uploadedAt`, and `status: uploaded` to `posts.json`.
+- Verified with `npm run check` and `node scripts/check-posts.mjs posts.json`.
+- Note: Playwright Chrome launch fails inside the restricted sandbox but works outside it on the local machine.
+
+2026-06-06 21:35:00 BST
+- Added editable review support in `instagram.html`: previous/next navigation, post field editing, caption/hashtags/alt text editing, and save/export for loaded JSON.
+- Added `logoPath` and `photoPath` support so posts can reference local assets that render into PNG exports.
+- Added `assets/logos/` and `assets/photos/` library folders.
+- Added `scripts/process-posts.mjs` for batch prepare/send workflows with `--limit`, `--dry-run`, and `--force`.
+- Updated README, automation plan, package scripts, `posts.example.json`, and `posts.json`.
+- Verified with `npm run check`, batch send dry-run, `node scripts/check-posts.mjs posts.json`, and Playwright render outside the sandbox.
+
+2026-06-06 21:44:46 BST
+- Reset `posts.json` and `posts.example.json` to three fresh square Wolds Record draft posts for review.
+- New drafts: `wolds-record-006-paper-notes`, `wolds-record-007-vet-reports`, and `wolds-record-008-canine-only`.
+- Verified JSON parsing, `npm run check`, and `node scripts/check-posts.mjs posts.json`.
+- Current expected status: all three posts are blocked only because `publicImageUrl` is intentionally blank before render/upload.
+
+2026-06-06 21:56:43 BST
+- Updated `posts.json` and `posts.example.json` so all three draft posts use `assets/logos/wolds-record-logo-transparent-small.png`.
+- Assigned `assets/photos/dog-image.png` to `wolds-record-006-paper-notes`, left `wolds-record-007-vet-reports` without a photo, and assigned `assets/photos/dog-image-2.png` to `wolds-record-008-canine-only`.
+- Fixed canvas export for local image paths by embedding local assets as data URLs in `render-post.mjs` and improving browser-side image loading in `instagram.html`.
+- Verified JSON parsing, `npm run check`, `node scripts/check-posts.mjs posts.json`, and Playwright render of a logo/photo post outside the sandbox.
+
+2026-06-07 07:22:06 BST
+- Expanded `posts.json` to 20 square Wolds Record draft posts, avoiding the three already-live themes supplied by the user.
+- Synced `posts.example.json` to the same 20-post draft set for review/testing.
+- Rotated available `assets/photos/` images across the set, with a few intentional no-photo posts for visual variety.
+- Verified JSON parsing, unique IDs, all-square aspect ratios, `npm run check`, and Playwright render smoke tests for one photo post and one no-photo post outside the sandbox.
+- Current expected status: all 20 posts are drafts and blocked only because `publicImageUrl` is blank before review/render/upload.

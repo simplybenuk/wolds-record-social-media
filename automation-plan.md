@@ -118,7 +118,7 @@ Use SQLite initially.
 - image_path
 - status: draft / approved / rejected / sent_to_buffer / published
 - scheduled_for
-- buffer_update_id
+- buffer_post_id
 - created_at
 - updated_at
 
@@ -176,11 +176,32 @@ Not allowed in v1:
 
 Target behaviour:
 
-- Use Buffer API to create draft posts.
+- Use Buffer's GraphQL API to create draft posts.
 - Store Buffer IDs back against the local draft post.
 - Keep Buffer as the final scheduling and publishing interface.
 
 This keeps the risk low and gives Ben / Olivia a familiar final approval step.
+
+Current API notes:
+
+- Endpoint: `https://api.buffer.com`
+- Draft creation: `createPost(input: { ..., saveToDraft: true })`
+- Images/videos are not uploaded directly to Buffer.
+- Media must be available at a public URL and passed through the current `assets` array format, for example:
+
+```json
+{
+  "assets": [
+    {
+      "image": {
+        "url": "https://public-host.example.com/post.png"
+      }
+    }
+  ]
+}
+```
+
+This means local generated images need a publishing step before image posts can be sent to Buffer. Good options are Cloudinary or a public Cloudflare R2 bucket. Tailscale-only hosting is still suitable for the private review app, but Buffer will not be able to fetch media from it.
 
 ## UI v1
 
@@ -208,11 +229,18 @@ Review screen should show:
 
 Reuse the current HTML canvas post builder.
 
-v1 options:
+v0 options:
 
 - Keep manual single-post builder.
 - Add JSON import.
+- Use `posts.example.json` / `posts.json` as the shared draft source.
+- Send approved text or image drafts to Buffer from a small Node script.
+
+v1 options:
+
 - Add batch render from `posts.json`.
+- Store generated images in `/generated`.
+- Add public media upload step before Buffer image drafts.
 
 v2 options:
 
@@ -233,6 +261,35 @@ v2 options:
 - Define `posts.json` format.
 - Update builder to load a JSON file.
 - Generate multiple images without manually editing fields each time.
+
+Initial implementation:
+
+- `posts.example.json` defines the draft post format.
+- `instagram.html` can load a JSON file and populate the existing canvas controls.
+- `scripts/create-buffer-draft.mjs` can send a selected JSON post to Buffer as a draft.
+- `scripts/create-buffer-draft.mjs --write-back` can record `bufferPostId`, `sentToBufferAt`, and `sent_to_buffer` status.
+- `scripts/check-posts.mjs` reports which posts are ready, blocked, or already sent.
+- `scripts/mark-post-status.mjs` can manually update status for posts already handled outside the script.
+- `scripts/render-post.mjs` renders a selected post from `posts.json` through Playwright and the existing canvas builder.
+- `scripts/upload-cloudinary.mjs` uploads rendered PNGs to Cloudinary and can write `publicImageUrl` back to `posts.json`.
+- `scripts/prepare-post.mjs` wraps render + upload + JSON write-back.
+- `scripts/process-posts.mjs` batch prepares and/or sends multiple posts, with `--limit` and `--dry-run` support.
+- `instagram.html` supports JSON-backed review/edit/save for post copy, captions, hashtags, alt text, `logoPath`, and `photoPath`.
+- `.env.example` documents the required Buffer API settings.
+
+Suggested manual v0 workflow:
+
+```text
+1. Copy posts.example.json to posts.json
+2. Edit captions, hashtags, and post fields
+3. Open instagram.html
+4. Load posts.json
+5. Select a post and download the PNG
+6. Upload/rendered PNG to a public media host
+7. Add the public URL to publicImageUrl
+8. Run scripts/create-buffer-draft.mjs for the approved post
+9. Final scheduling/publishing happens inside Buffer
+```
 
 ### Mode 3 — Local app
 

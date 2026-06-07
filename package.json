@@ -1,0 +1,15 @@
+{
+  "name": "wolds-record-social-media",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check scripts/render-post.mjs && node --check scripts/upload-cloudinary.mjs && node --check scripts/prepare-post.mjs && node --check scripts/process-posts.mjs && node --check scripts/create-buffer-draft.mjs && node --check scripts/check-posts.mjs && node --check scripts/mark-post-status.mjs && node --check scripts/list-buffer-channels.mjs",
+    "posts:check": "node scripts/check-posts.mjs posts.json",
+    "posts:prepare": "node scripts/prepare-post.mjs posts.json",
+    "posts:process": "node scripts/process-posts.mjs posts.json"
+  },
+  "dependencies": {
+    "playwright-core": "^1.53.0"
+  }
+}
