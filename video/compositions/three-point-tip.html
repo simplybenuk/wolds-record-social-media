@@ -1,0 +1,102 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[{"id":"headline","type":"string","label":"Headline","default":"Three signs your client records are fighting you"},{"id":"kicker","type":"string","label":"Kicker","default":"Wolds Record"},{"id":"cta","type":"string","label":"Call to action","default":"Calm, simple client records. Wolds Record."},{"id":"points","type":"string","label":"Points (JSON array of strings)","default":"[\"You rewrite the same details in three places\",\"Finding last session takes longer than writing it\",\"You dread the admin more than the work\"]"},{"id":"scenes","type":"string","label":"Photo scenes (JSON array of {photoPath, caption})","default":"[]"},{"id":"screenshots","type":"string","label":"Screenshots (JSON array of paths)","default":"[]"},{"id":"photoPath","type":"image","label":"Photo","default":"assets/photos/dog-image.png"},{"id":"logoPath","type":"image","label":"Logo","default":"assets/logos/wolds-record-logo-transparent-small.png"},{"id":"duration","type":"number","label":"Duration (seconds)","default":12}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Wolds Record — three point tip</title>
+    <link rel="stylesheet" href="/video/brand/tokens.css" />
+    <link rel="stylesheet" href="/video/components/scene.css" />
+  </head>
+  <body>
+    <div
+      id="three-point-tip"
+      class="wr-stage"
+      data-composition-id="three-point-tip"
+      data-start="0"
+      data-width="1080"
+      data-height="1920"
+      data-fps="30"
+      data-no-timeline
+    >
+      <div class="wr-paper"></div>
+
+      <section id="scene-hook" class="wr-scene wr-scene--dark">
+        <div class="wr-scene__body">
+          <p id="hook-kicker" class="wr-kicker wr-rise">Wolds Record</p>
+          <h1 id="hook-headline" class="wr-headline wr-rise">
+            Three signs your client records are fighting you
+          </h1>
+          <span class="wr-rule wr-rise"></span>
+        </div>
+      </section>
+
+      <section id="scene-point-1" class="wr-scene wr-point-scene">
+        <div class="wr-scene__body">
+          <p class="wr-index wr-rise">01</p>
+          <span class="wr-rule wr-rise"></span>
+          <p class="wr-point wr-rise">You rewrite the same details in three places</p>
+        </div>
+      </section>
+
+      <section id="scene-point-2" class="wr-scene wr-point-scene">
+        <div class="wr-scene__body">
+          <p class="wr-index wr-rise">02</p>
+          <span class="wr-rule wr-rise"></span>
+          <p class="wr-point wr-rise">Finding last session takes longer than writing it</p>
+        </div>
+      </section>
+
+      <section id="scene-point-3" class="wr-scene wr-point-scene">
+        <div class="wr-scene__body">
+          <p class="wr-index wr-rise">03</p>
+          <span class="wr-rule wr-rise"></span>
+          <p class="wr-point wr-rise">You dread the admin more than the work</p>
+        </div>
+      </section>
+
+      <section id="scene-cta" class="wr-scene">
+        <div class="wr-scene__body wr-scene__body--center">
+          <img
+            id="cta-logo"
+            class="wr-logo wr-rise"
+            src="/assets/logos/wolds-record-logo-transparent-small.png"
+            alt="Wolds Record"
+          />
+          <span class="wr-rule wr-rise"></span>
+          <p id="cta-text" class="wr-cta wr-rise">Calm, simple client records. Wolds Record.</p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/video/components/scene.js"></script>
+    <script>
+      WRScene.build(12, function (vars) {
+        var scenes = [];
+
+        WRScene.setText(document.getElementById("hook-kicker"), vars.kicker);
+        WRScene.setText(document.getElementById("hook-headline"), vars.headline);
+        scenes.push({ el: document.getElementById("scene-hook"), weight: 3 });
+
+        var points = WRScene.asTextList(vars.points);
+        var nodes = document.querySelectorAll(".wr-point-scene");
+        for (var i = 0; i < nodes.length; i++) {
+          if (points.length > 0 && !points[i]) {
+            WRScene.hide(nodes[i]);
+            continue;
+          }
+          WRScene.setText(nodes[i].querySelector(".wr-point"), points[i]);
+          scenes.push({ el: nodes[i], weight: 2.25 });
+        }
+
+        WRScene.setImage(document.getElementById("cta-logo"), vars.logoPath);
+        WRScene.setText(document.getElementById("cta-text"), vars.cta);
+        scenes.push({ el: document.getElementById("scene-cta"), weight: 2.25 });
+
+        return scenes;
+      });
+    </script>
+  </body>
+</html>

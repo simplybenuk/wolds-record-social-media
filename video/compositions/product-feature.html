@@ -1,0 +1,113 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[{"id":"headline","type":"string","label":"Headline","default":"Every session note in one calm place"},{"id":"kicker","type":"string","label":"Kicker","default":"Wolds Record"},{"id":"cta","type":"string","label":"Call to action","default":"Try Wolds Record — built for behaviour professionals."},{"id":"points","type":"string","label":"Benefit statements (JSON array of strings)","default":"[\"Write the note once. Find it in seconds.\"]"},{"id":"scenes","type":"string","label":"Photo scenes (JSON array of {photoPath, caption})","default":"[]"},{"id":"screenshots","type":"string","label":"Screenshots (JSON array of paths)","default":"[\"assets/photos/dog-image-2.png\"]"},{"id":"photoPath","type":"image","label":"Photo","default":"assets/photos/dog-image.png"},{"id":"logoPath","type":"image","label":"Logo","default":"assets/logos/wolds-record-logo-transparent-small.png"},{"id":"duration","type":"number","label":"Duration (seconds)","default":12}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Wolds Record — product feature</title>
+    <link rel="stylesheet" href="/video/brand/tokens.css" />
+    <link rel="stylesheet" href="/video/components/scene.css" />
+  </head>
+  <body>
+    <div
+      id="product-feature"
+      class="wr-stage"
+      data-composition-id="product-feature"
+      data-start="0"
+      data-width="1080"
+      data-height="1920"
+      data-fps="30"
+      data-no-timeline
+    >
+      <div class="wr-paper"></div>
+
+      <section id="scene-headline" class="wr-scene wr-scene--dark">
+        <div class="wr-scene__body">
+          <p id="headline-kicker" class="wr-kicker wr-rise">Wolds Record</p>
+          <h1 id="headline-text" class="wr-headline wr-rise">
+            Every session note in one calm place
+          </h1>
+          <span class="wr-rule wr-rise"></span>
+        </div>
+      </section>
+
+      <section id="scene-shot" class="wr-scene wr-shot-scene">
+        <div class="wr-scene__body">
+          <p class="wr-label wr-rise wr-shot-label">Inside Wolds Record</p>
+          <figure class="wr-frame wr-rise">
+            <img class="wr-shot-img" src="/assets/photos/dog-image-2.png" alt="" />
+          </figure>
+        </div>
+      </section>
+
+      <section id="scene-benefit" class="wr-scene wr-scene--dark">
+        <div class="wr-scene__body">
+          <span class="wr-rule wr-rise"></span>
+          <p id="benefit-text" class="wr-benefit wr-rise">
+            Write the note once. Find it in seconds.
+          </p>
+        </div>
+      </section>
+
+      <section id="scene-cta" class="wr-scene">
+        <div class="wr-scene__body wr-scene__body--center">
+          <img
+            id="cta-logo"
+            class="wr-logo wr-rise"
+            src="/assets/logos/wolds-record-logo-transparent-small.png"
+            alt="Wolds Record"
+          />
+          <span class="wr-rule wr-rise"></span>
+          <p id="cta-text" class="wr-cta wr-rise">
+            Try Wolds Record — built for behaviour professionals.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/video/components/scene.js"></script>
+    <script>
+      WRScene.build(12, function (vars) {
+        var scenes = [];
+
+        WRScene.setText(document.getElementById("headline-kicker"), vars.kicker);
+        WRScene.setText(document.getElementById("headline-text"), vars.headline);
+        scenes.push({ el: document.getElementById("scene-headline"), weight: 3 });
+
+        var shots = WRScene.asTextList(vars.screenshots);
+        var template = document.getElementById("scene-shot");
+        var label = WRScene.asText(vars.kicker) || "Inside Wolds Record";
+        var count = shots.length > 0 ? shots.length : 1;
+        var shotWeight = 5.25 / count;
+
+        var anchor = template;
+        for (var i = 0; i < count; i++) {
+          var scene = i === 0 ? template : template.cloneNode(true);
+          if (i > 0) {
+            scene.setAttribute("id", "scene-shot-" + (i + 1));
+            anchor.parentNode.insertBefore(scene, anchor.nextSibling);
+            anchor = scene;
+          }
+          WRScene.setText(scene.querySelector(".wr-shot-label"), label);
+          WRScene.setImage(scene.querySelector(".wr-shot-img"), shots[i]);
+          scenes.push({ el: scene, weight: shotWeight });
+        }
+
+        var benefits = WRScene.asTextList(vars.points);
+        WRScene.setText(
+          document.getElementById("benefit-text"),
+          benefits.length > 0 ? benefits[0] : vars.kicker
+        );
+        scenes.push({ el: document.getElementById("scene-benefit"), weight: 2.25 });
+
+        WRScene.setImage(document.getElementById("cta-logo"), vars.logoPath);
+        WRScene.setText(document.getElementById("cta-text"), vars.cta);
+        scenes.push({ el: document.getElementById("scene-cta"), weight: 1.5 });
+
+        return scenes;
+      });
+    </script>
+  </body>
+</html>

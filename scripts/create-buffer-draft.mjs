@@ -3,7 +3,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { isReel, resolveShareToFeed } from "./lib/content.mjs";
+
 const BUFFER_ENDPOINT = "https://api.buffer.com";
+const DEFAULT_THUMBNAIL_OFFSET = 2000;
 
 function readEnvFile(path = ".env"){
   if(!existsSync(path)) return;
@@ -86,6 +89,33 @@ function isInstagramPost(post){
     || process.env.BUFFER_CHANNEL_SERVICE === "instagram";
 }
 
+function declaredInstagramType(post){
+  const type = post.instagramType || post.postType;
+  return typeof type === "string" ? type.trim() : type;
+}
+
+// `format` drives the asset shape and `instagramType` drives Buffer's metadata.
+// They are sourced independently, so a mismatch (format "reel" + type "post")
+// produces a draft with a video asset labelled as a feed post. Refuse it rather
+// than coercing either side -- only the author knows which one is wrong.
+function instagramTypeConflict(post, reel){
+  const declared = declaredInstagramType(post);
+
+  if(!declared) return undefined;
+
+  const normalised = String(declared).toLowerCase();
+
+  if(reel && normalised !== "reel"){
+    return `format "reel" conflicts with instagramType "${declared}". A reel must use instagramType "reel".`;
+  }
+
+  if(!reel && normalised === "reel"){
+    return `instagramType "reel" conflicts with format "image". Set format to "reel" or change instagramType.`;
+  }
+
+  return undefined;
+}
+
 function buildCreateDraftInput(post){
   const channelId = post.bufferChannelId || process.env.BUFFER_CHANNEL_ID;
 
@@ -102,18 +132,36 @@ function buildCreateDraftInput(post){
     source: "wolds-record-social-media"
   };
 
+  const reel = isReel(post);
+
   if(isInstagramPost(post)){
-    if(!post.publicImageUrl){
+    const conflict = instagramTypeConflict(post, reel);
+
+    if(conflict){
+      throw new Error(conflict);
+    }
+
+    if(reel && !post.publicVideoUrl){
+      throw new Error([
+        "Instagram reels require a publicVideoUrl.",
+        `Render ${post.videoPath || "the reel video"}, upload it to a public media host, then add that URL to this post.`
+      ].join(" "));
+    }
+
+    if(!reel && !post.publicImageUrl){
       throw new Error([
         "Instagram posts require a publicImageUrl.",
         `Render ${post.imagePath || "the post image"}, upload it to a public media host, then add that URL to this post.`
       ].join(" "));
     }
 
+    // Instagram only acts on shouldShareToFeed for Reels, but it is sent on both
+    // paths because the pre-Reel image payload carried it and that payload is
+    // contract-frozen. See resolveShareToFeed for the default and how to opt out.
     input.metadata = {
       instagram: {
-        type: post.instagramType || post.postType || "post",
-        shouldShareToFeed: post.shouldShareToFeed ?? true
+        type: declaredInstagramType(post) || (reel ? "reel" : "post"),
+        shouldShareToFeed: resolveShareToFeed(post)
       }
     };
   }
@@ -122,7 +170,22 @@ function buildCreateDraftInput(post){
     input.dueAt = post.scheduledFor;
   }
 
-  if(post.publicImageUrl){
+  if(reel){
+    if(post.publicVideoUrl){
+      input.assets = [
+        {
+          video: {
+            url: post.publicVideoUrl,
+            metadata: {
+              thumbnailOffset: Number.isFinite(post.thumbnailOffset)
+                ? post.thumbnailOffset
+                : DEFAULT_THUMBNAIL_OFFSET
+            }
+          }
+        }
+      ];
+    }
+  } else if(post.publicImageUrl){
     input.assets = [
       {
         image: {
@@ -215,8 +278,14 @@ async function main(){
     throw new Error(`No post found with id "${args.postId}".`);
   }
 
-  if(args.requireImage && !post.publicImageUrl){
-    throw new Error("This post has no publicImageUrl. Buffer cannot fetch local imagePath files.");
+  if(args.requireImage){
+    if(isReel(post) && !post.publicVideoUrl){
+      throw new Error("This reel has no publicVideoUrl. Buffer cannot fetch local videoPath files.");
+    }
+
+    if(!isReel(post) && !post.publicImageUrl){
+      throw new Error("This post has no publicImageUrl. Buffer cannot fetch local imagePath files.");
+    }
   }
 
   const input = buildCreateDraftInput(post);

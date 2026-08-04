@@ -5,6 +5,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { isReel } from "./lib/content.mjs";
+
 const execFileAsync = promisify(execFile);
 const SKIP_STATUSES = new Set(["sent_to_buffer", "rejected", "published"]);
 
@@ -61,12 +63,30 @@ function activePosts(posts){
   return posts.filter(post => !SKIP_STATUSES.has(post.status) && !post.bufferPostId);
 }
 
-function postsNeedingPrepare(posts, force){
-  return activePosts(posts).filter(post => force || !post.publicImageUrl);
+// A batch run must not be taken down by one bad record. Resolving the format up
+// front turns an unknown `format` into a reported, skipped record instead of an
+// exception that hides every other post in the file.
+function partitionPosts(posts){
+  const entries = [];
+  const invalid = [];
+
+  for(const post of posts){
+    try{
+      entries.push({ post, reel: isReel(post) });
+    } catch(err){
+      invalid.push({ post, message: err.message });
+    }
+  }
+
+  return { entries, invalid };
 }
 
-function postsReadyForBuffer(posts){
-  return activePosts(posts).filter(post => post.publicImageUrl);
+function publicAssetUrl(entry){
+  return entry.reel ? entry.post.publicVideoUrl : entry.post.publicImageUrl;
+}
+
+function prepareScriptFor(entry){
+  return entry.reel ? "scripts/prepare-video.mjs" : "scripts/prepare-post.mjs";
 }
 
 function limitPosts(posts, limit){
@@ -91,37 +111,71 @@ async function run(command, args){
   }
 }
 
-async function preparePosts(postsPath, limit, dryRun, force){
-  const posts = limitPosts(postsNeedingPrepare(readPosts(postsPath), force), limit);
+let failedRecords = 0;
 
-  if(!posts.length){
+// --all calls both phases, so a record is only reported (and counted) once.
+const reportedSkips = new Set();
+
+function reportSkipped(invalid){
+  for(const { post, message } of invalid){
+    const key = `${post.id || "(missing id)"}:${message}`;
+
+    if(reportedSkips.has(key)) continue;
+
+    reportedSkips.add(key);
+    failedRecords += 1;
+    console.error(`[skipped] ${post.id || "(missing id)"}: ${message}`);
+  }
+}
+
+async function runForPost(post, command, args){
+  try{
+    await run(command, args);
+  } catch(err){
+    failedRecords += 1;
+    console.error(`[failed] ${post.id || "(missing id)"}: ${err.message}`);
+  }
+}
+
+async function preparePosts(postsPath, limit, dryRun, force){
+  const { entries, invalid } = partitionPosts(activePosts(readPosts(postsPath)));
+
+  reportSkipped(invalid);
+
+  const selected = limitPosts(entries.filter(entry => force || !publicAssetUrl(entry)), limit);
+
+  if(!selected.length){
     console.log("No posts need render/upload preparation.");
     return;
   }
 
-  for(const post of posts){
-    await run(process.execPath, [
-      "scripts/prepare-post.mjs",
+  for(const entry of selected){
+    await runForPost(entry.post, process.execPath, [
+      prepareScriptFor(entry),
       postsPath,
-      post.id,
+      entry.post.id,
       ...(dryRun ? ["--dry-run"] : [])
     ]);
   }
 }
 
 async function sendPosts(postsPath, limit, dryRun){
-  const posts = limitPosts(postsReadyForBuffer(readPosts(postsPath)), limit);
+  const { entries, invalid } = partitionPosts(activePosts(readPosts(postsPath)));
 
-  if(!posts.length){
+  reportSkipped(invalid);
+
+  const selected = limitPosts(entries.filter(entry => publicAssetUrl(entry)), limit);
+
+  if(!selected.length){
     console.log("No posts are ready to send to Buffer.");
     return;
   }
 
-  for(const post of posts){
-    await run(process.execPath, [
+  for(const entry of selected){
+    await runForPost(entry.post, process.execPath, [
       "scripts/create-buffer-draft.mjs",
       postsPath,
-      post.id,
+      entry.post.id,
       "--write-back",
       ...(dryRun ? ["--dry-run"] : [])
     ]);
@@ -146,6 +200,12 @@ async function main(){
     await sendPosts(args.postsPath, args.limit, args.dryRun);
   } else {
     usage();
+    process.exitCode = 1;
+    return;
+  }
+
+  if(failedRecords){
+    console.error(`${failedRecords} record(s) could not be processed.`);
     process.exitCode = 1;
   }
 }

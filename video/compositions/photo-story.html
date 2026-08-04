@@ -1,0 +1,106 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[{"id":"headline","type":"string","label":"Headline","default":"A quieter way to keep client records"},{"id":"kicker","type":"string","label":"Kicker","default":"Wolds Record"},{"id":"cta","type":"string","label":"Call to action","default":"Wolds Record — notes that stay out of your way."},{"id":"points","type":"string","label":"Points (JSON array of strings)","default":"[]"},{"id":"scenes","type":"string","label":"Photo scenes (JSON array of {photoPath, caption})","default":"[{\"photoPath\":\"assets/photos/dog-image.png\",\"caption\":\"Every session, written once and filed where you expect it.\"},{\"photoPath\":\"assets/photos/dog-image-2.png\",\"caption\":\"No spreadsheets. No lost notebooks. No re-typing.\"}]"},{"id":"screenshots","type":"string","label":"Screenshots (JSON array of paths)","default":"[]"},{"id":"photoPath","type":"image","label":"Opening photo","default":"assets/photos/dog-image.png"},{"id":"logoPath","type":"image","label":"Logo","default":"assets/logos/wolds-record-logo-transparent-small.png"},{"id":"duration","type":"number","label":"Duration (seconds)","default":12}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Wolds Record — photo story</title>
+    <link rel="stylesheet" href="/video/brand/tokens.css" />
+    <link rel="stylesheet" href="/video/components/scene.css" />
+  </head>
+  <body>
+    <div
+      id="photo-story"
+      class="wr-stage"
+      data-composition-id="photo-story"
+      data-start="0"
+      data-width="1080"
+      data-height="1920"
+      data-fps="30"
+      data-no-timeline
+    >
+      <div class="wr-paper"></div>
+
+      <section id="scene-open" class="wr-scene wr-scene--photo">
+        <figure class="wr-photo">
+          <img id="open-photo" src="/assets/photos/dog-image.png" alt="" />
+        </figure>
+        <div class="wr-scrim"></div>
+        <div class="wr-scene__body wr-scene__body--bottom">
+          <p id="open-kicker" class="wr-kicker wr-rise">Wolds Record</p>
+          <h1 id="open-headline" class="wr-headline wr-rise">
+            A quieter way to keep client records
+          </h1>
+          <span class="wr-rule wr-rise"></span>
+        </div>
+      </section>
+
+      <section id="scene-story" class="wr-scene wr-scene--photo wr-story-scene">
+        <figure class="wr-photo">
+          <img class="wr-story-photo" src="/assets/photos/dog-image-2.png" alt="" />
+        </figure>
+        <div class="wr-scrim"></div>
+        <div class="wr-scene__body wr-scene__body--bottom">
+          <span class="wr-rule wr-rise"></span>
+          <p class="wr-caption wr-story-caption wr-rise">
+            Every session, written once and filed where you expect it.
+          </p>
+        </div>
+      </section>
+
+      <section id="scene-close" class="wr-scene">
+        <div class="wr-scene__body wr-scene__body--center">
+          <img
+            id="close-logo"
+            class="wr-logo wr-rise"
+            src="/assets/logos/wolds-record-logo-transparent-small.png"
+            alt="Wolds Record"
+          />
+          <span class="wr-rule wr-rise"></span>
+          <p id="close-text" class="wr-cta wr-rise">
+            Wolds Record — notes that stay out of your way.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/video/components/scene.js"></script>
+    <script>
+      WRScene.build(12, function (vars) {
+        var scenes = [];
+
+        WRScene.setImage(document.getElementById("open-photo"), vars.photoPath);
+        WRScene.setText(document.getElementById("open-kicker"), vars.kicker);
+        WRScene.setText(document.getElementById("open-headline"), vars.headline);
+        scenes.push({ el: document.getElementById("scene-open"), weight: 3 });
+
+        var story = WRScene.asList(vars.scenes);
+        var template = document.getElementById("scene-story");
+        var count = story.length > 0 ? Math.min(story.length, 3) : 1;
+        var storyWeight = 6 / count;
+        var anchor = template;
+
+        for (var i = 0; i < count; i++) {
+          var scene = i === 0 ? template : template.cloneNode(true);
+          if (i > 0) {
+            scene.setAttribute("id", "scene-story-" + (i + 1));
+            anchor.parentNode.insertBefore(scene, anchor.nextSibling);
+            anchor = scene;
+          }
+          var item = story[i] || {};
+          WRScene.setImage(scene.querySelector(".wr-story-photo"), item.photoPath || vars.photoPath);
+          WRScene.setText(scene.querySelector(".wr-story-caption"), item.caption);
+          scenes.push({ el: scene, weight: storyWeight });
+        }
+
+        WRScene.setImage(document.getElementById("close-logo"), vars.logoPath);
+        WRScene.setText(document.getElementById("close-text"), vars.cta);
+        scenes.push({ el: document.getElementById("scene-close"), weight: 3 });
+
+        return scenes;
+      });
+    </script>
+  </body>
+</html>
