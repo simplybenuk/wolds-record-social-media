@@ -1,0 +1,285 @@
+/* Shared scene, typography and motion primitives for every Wolds Record Reel.
+   Compositions supply structure only; all styling lives here. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: var(--wr-paper);
+}
+
+body {
+  font-family: var(--wr-font-sans);
+  color: var(--wr-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.wr-stage {
+  position: relative;
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+  background: var(--wr-paper);
+}
+
+/* Persistent paper layer. Never cuts, and carries the composition clock: its
+   animation runs for exactly the requested duration, which is what the
+   renderer measures when deriving how long to capture. */
+.wr-paper {
+  position: absolute;
+  inset: 0;
+  background: var(--wr-paper);
+  animation: wr-hold var(--wr-total, 12s) linear 0s both;
+}
+
+/* ---------------------------------------------------------------- scenes */
+
+/* Scene lifecycle is pure CSS on the absolute composition clock. Each scene
+   is opaque and stacked above the one before it, and simply fades itself in
+   at its own start time — which cross-dissolves it over its predecessor with
+   no gap and no cut. Because every value is a function of the absolute clock,
+   any seek position resolves to exactly one correct frame. */
+.wr-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--wr-paper);
+  animation: wr-fade-in var(--wr-scene-in-dur, 0.5s) var(--wr-ease) var(--wr-scene-at, 0s) both;
+}
+
+.wr-scene--dark {
+  background: var(--wr-deep);
+  color: var(--wr-ink-on-dark);
+}
+
+.wr-scene--photo {
+  background: var(--wr-navy);
+  color: var(--wr-ink-on-dark);
+}
+
+/* All readable content sits inside the Instagram safe area. */
+.wr-scene__body {
+  position: absolute;
+  inset: 0;
+  padding: var(--wr-safe-top) var(--wr-safe-x) var(--wr-safe-bottom);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--wr-space-m);
+}
+
+.wr-scene__body--bottom {
+  justify-content: flex-end;
+}
+
+.wr-scene__body--center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: var(--wr-space-l);
+}
+
+/* ------------------------------------------------------------ typography */
+
+.wr-kicker {
+  font-family: var(--wr-font-sans);
+  font-size: var(--wr-size-kicker);
+  font-weight: 600;
+  letter-spacing: var(--wr-track-kicker);
+  text-transform: uppercase;
+  color: var(--wr-ink-soft);
+}
+
+.wr-scene--dark .wr-kicker,
+.wr-scene--photo .wr-kicker {
+  color: var(--wr-accent);
+}
+
+.wr-label {
+  font-family: var(--wr-font-sans);
+  font-size: var(--wr-size-label);
+  font-weight: 600;
+  letter-spacing: var(--wr-track-label);
+  text-transform: uppercase;
+  color: var(--wr-ink-soft);
+}
+
+.wr-headline {
+  font-family: var(--wr-font-display);
+  font-size: var(--wr-size-headline);
+  font-weight: 600;
+  line-height: var(--wr-lead-tight);
+  letter-spacing: -0.012em;
+  color: var(--wr-ink);
+  text-wrap: balance;
+}
+
+.wr-scene--dark .wr-headline,
+.wr-scene--photo .wr-headline {
+  color: var(--wr-ink-on-dark);
+}
+
+.wr-point {
+  font-family: var(--wr-font-sans);
+  font-size: var(--wr-size-point);
+  font-weight: 500;
+  line-height: var(--wr-lead-normal);
+  letter-spacing: -0.008em;
+  color: var(--wr-ink);
+  text-wrap: pretty;
+}
+
+.wr-caption {
+  font-family: var(--wr-font-sans);
+  font-size: var(--wr-size-caption);
+  font-weight: 500;
+  line-height: var(--wr-lead-normal);
+  color: var(--wr-ink-on-dark);
+  text-wrap: pretty;
+}
+
+.wr-benefit {
+  font-family: var(--wr-font-display);
+  font-size: 72px;
+  font-weight: 500;
+  line-height: var(--wr-lead-tight);
+  color: var(--wr-ink-on-dark);
+  text-wrap: balance;
+}
+
+.wr-cta {
+  font-family: var(--wr-font-sans);
+  font-size: var(--wr-size-cta);
+  font-weight: 600;
+  line-height: var(--wr-lead-normal);
+  letter-spacing: -0.006em;
+  color: var(--wr-ink);
+  text-wrap: balance;
+}
+
+.wr-index {
+  font-family: var(--wr-font-display);
+  font-size: var(--wr-size-index);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--wr-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------- furnishings */
+
+.wr-rule {
+  display: block;
+  width: 132px;
+  height: var(--wr-rule-thickness);
+  background: var(--wr-accent);
+  border-radius: 2px;
+}
+
+.wr-logo {
+  display: block;
+  width: 260px;
+  height: auto;
+}
+
+.wr-photo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--wr-navy);
+}
+
+.wr-photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 50% 50%;
+  animation: wr-drift var(--wr-scene-span, 4s) linear var(--wr-scene-at, 0s) both;
+}
+
+.wr-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--wr-scrim);
+}
+
+.wr-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: #ffffff;
+  border: 2px solid rgba(20, 40, 54, 0.09);
+  border-radius: var(--wr-frame-radius);
+  box-shadow: 0 28px 70px rgba(20, 40, 54, 0.12);
+  overflow: hidden;
+}
+
+.wr-frame > img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* ---------------------------------------------------------------- motion */
+
+/* Every animation is authored on the absolute composition clock via
+   animation-delay, with animation-fill-mode: both. The renderer seeks by
+   assigning Animation.currentTime, so each frame resolves deterministically
+   at any timestamp. No JS timers, no rAF, no wall-clock reads. */
+
+.wr-rise {
+  animation: wr-rise var(--wr-in-dur) var(--wr-ease) var(--wr-at, 0s) both;
+}
+
+@keyframes wr-hold {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.999;
+  }
+}
+
+@keyframes wr-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wr-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--wr-rise-from), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Slow, barely-there push on photography so stills do not look frozen. */
+@keyframes wr-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(var(--wr-drift-scale));
+  }
+}

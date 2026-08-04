@@ -44,3 +44,98 @@
 - Rotated available `assets/photos/` images across the set, with a few intentional no-photo posts for visual variety.
 - Verified JSON parsing, unique IDs, all-square aspect ratios, `npm run check`, and Playwright render smoke tests for one photo post and one no-photo post outside the sandbox.
 - Current expected status: all 20 posts are drafts and blocked only because `publicImageUrl` is blank before review/render/upload.
+
+2026-08-03 Installed the BWH AI workflow (bwh-adopt) for two agent hosts.
+- Source: bwh-ai-workflow plugin cache v0.1.0 (no git metadata available, so no commit SHA could be pinned).
+- Added `.claude/` and `.agents/`, each with `skills/bwh-*` (7 skills) and `contracts/` (8 contracts) plus a `bwh-ai-workflow.lock`.
+- Added host-neutral adapter at `adapters/wolds-record-social-media/` (README.md + context-map.md), built from the workflow `_template`.
+- Did NOT reuse the bundled `adapters/wolds-record/` adapter: it describes a Supabase app with typecheck/test/lint and org scoping, none of which exist here.
+- Verified `npm run check` and `npm run posts:check` (20 sent, 0 blocked), skill frontmatter on all 7 skills, and that every `../../contracts/*.md` reference resolves in both homes.
+- Manual follow-up: no `CLAUDE.md` exists for the Claude Code host, and the adapter's spec/PRD/review/archive paths are left as explicit placeholders.
+
+2026-08-03 Added CLAUDE.md and the plans/ workflow directory tree.
+- Created `CLAUDE.md` at the repository root, mirroring `AGENTS.md` rules plus validation commands, guardrails, adapter pointers, and the installed-workflow note. `AGENTS.md` left unchanged; the two must be kept in sync.
+- Created `plans/` with `discovery/`, `specs/`, `tasks/`, `reviews/`, `output-testing/`, and `archive/` (each with a `.gitkeep`), plus `plans/README.md` documenting layout, naming, classification, and the on-completion checklist.
+- Updated `adapters/wolds-record-social-media/README.md` and `context-map.md` to point every planning, review, output-testing, archive, classification, and manifest rule at the new `plans/` paths.
+- Verified `npm run check` and `npm run posts:check` (20 sent, 0 blocked) still pass.
+- Manual follow-up: PRD/task record schema, test-framework decision, branch/commit/review/release policy, and the render smoke-check command are still open in the adapter.
+
+2026-08-04 Added Instagram Reel support (spec-driven change: instagram-reel-support).
+- New: `video/` HyperFrames composition layer (brand tokens, shared scene CSS/JS, three templates), `scripts/render-video.mjs`, `scripts/prepare-video.mjs`, `scripts/lib/content.mjs`, `test/` (32 checks).
+- Modified: `check-posts.mjs`, `create-buffer-draft.mjs`, `upload-cloudinary.mjs`, `process-posts.mjs`, `instagram.html`, `package.json`, `posts.example.json`, `README.md`.
+- `format: "image"|"reel"` routes render/upload/Buffer-asset; a record with no `format` still behaves exactly as a static image.
+- Verified: `npm run check` PASS; `npm test` 32/32; `posts.json` unmodified (0 ready, 0 blocked, 20 sent); static PNG md5 17f2aa4ff9326356eaf434e67a9d6ba3 identical pre/post change; genuine MP4s rendered at exactly 12.000s and 15.000s, 1080x1920 h264.
+- Two integration defects found and fixed: HyperFrames --strict-variables rejects array variables (now JSON-encoded); editor preview pacing diverged from composition weights and omitted product-feature's benefit scene.
+- Manual follow-up: Cloudinary video upload and Buffer reel draft are UNEXERCISED (no .env, external writes need authorisation); no product screenshots exist so product-feature has no rendered example; independent review agent failed on a session limit so review was implementer-performed.
+
+2026-08-04 Independent review of Reel support, and resolution of its findings.
+- Independent reviewer returned NOT READY (2 blocking, 8 should-fix). Verdict was correct; the earlier implementer-run review had missed both blocking issues.
+- B1: compositions left their own placeholder copy in the DOM when a field was empty, so a reel missing captions rendered marketing text the operator never wrote. Fixed in `video/components/scene.js` (clear instead of fall back) and `scripts/lib/content.mjs` (per-scene content validation, required cta, required product-feature benefit).
+- B2: the previously recorded "composition lint 0 errors" evidence never ran - `hyperframes lint` scanned zero files and still reported errorCount 0. Added `scripts/lint-compositions.mjs` (`npm run lint:compositions`), which fails loudly on a zero-file scan.
+- Also fixed: Cloudinary folder-prefix nesting on re-upload (billed duplicates, stale video served), editor `resolveFormat` divergence, batch aborting on one bad format, dead SCENE_WEIGHTS holding known-wrong pacing, format/instagramType mismatch, unpinned hyperframes, non-JSON upload error handling, silent template coercion. Added Buffer payload integration tests.
+- Verified: `npm run check` PASS; `npm test` 52/52; `npm run lint:compositions` 3 ok; posts.json unmodified (0 ready, 0 blocked, 20 sent); static PNG md5 17f2aa4ff9326356eaf434e67a9d6ba3 unchanged; both reels re-rendered at exactly 12.000s and 15.000s.
+- Manual follow-up: Cloudinary video upload and Buffer reel drafts still never executed (no .env); product-feature still has no rendered example; `shouldShareToFeed` defaults true for Reels and needs a product decision.
+
+2026-08-04 Resolved the open shouldShareToFeed product decision.
+- Human decision: Instagram Reels DO cross-post to the main feed by default (reach over grid curation). Default `true` kept, but made deliberate rather than inherited.
+- Added `resolveShareToFeed` + `SHARE_TO_FEED_DEFAULT` to `scripts/lib/content.mjs` as the single source of the rule, so `create-buffer-draft.mjs` and `check-posts.mjs` cannot diverge (the S2 failure mode from review round 2).
+- Non-boolean values are now rejected instead of coerced: `"shouldShareToFeed": "false"` is truthy in JS and would have silently inverted the author's intent.
+- `check-posts.mjs` now prints `shareToFeed=<value>` on every reel, so a defaulted `true` is visible before publishing, and validates the field on all Instagram posts.
+- Kept the field on image posts: Instagram ignores it there, but the pre-Reel payload carries it and byte-identical image payloads are an acceptance criterion. Verified the payload for `wolds-record-006-paper-notes` is identical to `git show HEAD:scripts/create-buffer-draft.mjs` output.
+- Documented in README ("Buffer draft flow for Reels"); recorded in `plans/tasks/` and `plans/reviews/instagram-reel-support.md`.
+- Verified: `npm run check` PASS; `npm test` 55/55 (3 new); `npm run lint:compositions` 3 ok; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `posts.json` unmodified.
+- Manual follow-up unchanged: Cloudinary video upload and Buffer reel drafts still never executed (no .env); product-feature still has no rendered example.
+
+2026-08-04 Wrote the human output-testing script for instagram-reel-support.
+- Added `plans/output-testing/instagram-reel-support.md`: 6 phases covering the three parts of the pipeline that have never executed (Cloudinary video upload, Buffer reel drafts, product-feature), plus the shouldShareToFeed decision and the B1 placeholder-copy guard.
+- Script uses a scratch `posts.testing.json` copied from `posts.example.json`; `posts.json` is read-only throughout (phase 5) per the live-data guardrail. Every Buffer step is a draft; nothing publishes.
+- Phase 0 expected outputs were executed and recorded verbatim, not guessed: `npm test` 55/55, `lint:compositions` 3 ok, `posts:check` 20 sent, and `check-posts posts.testing.json` 0 ready / 22 blocked / 0 sent with `shareToFeed=true` on both reels.
+- Phase 4 (B1) was executed by the agent to confirm the documented commands work: rendered `photo-story` from a hand-edited variables file with scene 2's caption blanked, via `npx hyperframes render --strict-variables` (bypassing CLI validation), then extracted the frame at t=8s. The scene rendered with the photo and accent rule and NO text - the B1 fix holds in a real render, not only in tests. Scene 1 at t=6s still showed its caption. Test artifacts deleted.
+- Phase 1.4 is the S1 regression check (upload the same reel twice, expect no duplicate asset and no `wolds-record/wolds-record/` nesting) - the defect most likely to still be real, since it was fixed against a never-executed path.
+- Manual follow-up: the script is written but NOT executed. Cloudinary and Buffer phases need `.env` credentials and human authorisation; `product-feature` still needs a real product screenshot supplied by the human.
+
+2026-08-04 Executed output testing for instagram-reel-support (human authorised the outward-facing writes).
+- Cloudinary PASSED, first ever real execution. Uploaded both reels; `wolds-record/wolds-record-reel-001.mp4` served over HTTP 200 byte-identical to the local file (995,771 bytes, h264 1080x1920 12.000000s).
+- S1 (folder nesting causing billed duplicates) CONFIRMED FIXED against the live service: re-uploading the same reel returned an identical URL and public_id, and the Cloudinary Admin API shows exactly 2 wolds-record video assets with zero `wolds-record/wolds-record/` paths.
+- Measured consumption (spec open question 3): reel-001 0.95 MB, reel-002 13.52 MB. Photo-story is ~14x heavier than the flat-panel three-point-tip.
+- Buffer BLOCKED: HTTP 401 "Access token is not valid" on every call, including read-only `list-buffer-channels.mjs`. BUFFER_API_KEY is 43 chars and token-shaped, so it is expired/revoked/wrong-type rather than a placeholder. Buffer reel drafts and the "also share to feed" toggle remain unproven at the service; the payloads are proven correct by dry-run (shouldShareToFeed true by default, false when opted out, saveToDraft always true).
+- Also passed: AC5 (reel without publicVideoUrl rejected, non-zero exit), B1 rendered guard, and Phase 5 live-data regression (posts.json unmodified, PNG md5 17f2aa4ff9326356eaf434e67a9d6ba3).
+- Nothing published. No Buffer write ever succeeded; every payload carried saveToDraft: true.
+- Results recorded in `plans/output-testing/instagram-reel-support.md`. Change is NOT yet acceptable for archive.
+- Manual follow-up: regenerate the Buffer API token and re-run Phase 2 (both reels are already uploaded and staged in posts.testing.json); supply a product screenshot for Phase 3; watch both reels for brand quality. Cloudinary test assets intentionally left in place for the Phase 2 re-run.
+
+2026-08-04 Output testing continued: Phase 3 (product-feature) PASSED; Phase 2 (Buffer) still blocked.
+- Buffer token STILL invalid. Retried at 15:37 UTC after the human reported regenerating it: same HTTP 401 "Access token is not valid". `.env` mtime is 07:44 UTC, ~8 hours earlier, and BUFFER_API_KEY is unchanged at 43 chars - the regenerated token was never written to the file. No code defect; nothing to fix in the repo.
+- Phase 3 PASSED, first ever render of `product-feature`. Human supplied a dashboard screenshot; cropped 1080x1954 from the 1080x2424 original to remove the phone status bar, browser URL bar, and Android nav bar, saved as `assets/photos/wolds-record-dashboard.png`.
+- Added `wolds-record-reel-003` (product-feature) to `posts.example.json`, so all three reel templates now have a worked example. Rendered h264 1080x1920 at exactly 12.000000s.
+- Verified all four scenes by frame extraction: title card, product card showing the app screenshot, benefit slide rendering `points[0]` verbatim, and the branded CTA. The benefit slide showed the authored text and NOT the "Wolds Record" kicker - the B1 fallback fix confirmed for the one template it had never been exercised on.
+- Staged Phase 2 for a one-command re-run: `posts.testing.json` left in the working tree with both reels `[ready]` (Cloudinary URLs in place, reel-002 set shouldShareToFeed false). Added `posts.testing.json` to `.gitignore` so the scratch file cannot be committed.
+- Verified: `npm run check` PASS; `npm test` 55/55; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `posts.json` unmodified.
+- Manual follow-up: paste the regenerated Buffer token into `.env`, confirm with `list-buffer-channels.mjs`, then run Phase 2 (draft creation + the "also share to feed" toggle check, ON for reel-001 / OFF for reel-002). Nobody has yet watched a reel end to end for pacing.
+
+2026-08-04 Output testing COMPLETE for instagram-reel-support. Buffer leg passed; all phases green.
+- Buffer token now valid. `list-buffer-channels.mjs` returned org "My Organization" and one Instagram channel `woldsrecord`; confirmed BUFFER_CHANNEL_ID matches that channel before any write.
+- Created the first two Buffer Reel drafts ever: 6a720c43672517345444aad9 (wolds-record-reel-001) and 6a720c89f57e7ef8ca948d3e (wolds-record-reel-002).
+- shouldShareToFeed VERIFIED AT THE SERVICE, not just in our payload: queried both posts back via the Buffer GraphQL read schema (InstagramPostMetadata) - reel-001 status=draft type=reel shouldShareToFeed=true, reel-002 status=draft type=reel shouldShareToFeed=false, both with a VideoAsset. The 2026-08-04 product decision and its opt-out both arrive intact.
+- Note: the write schema and read schema differ. Creation sends metadata.instagram.{type,shouldShareToFeed}; reading requires `post(input: PostInput!)` and an inline fragment on `InstagramPostMetadata`. Introspection was needed to find this; recorded here to save the next agent the round trip.
+- Nothing published. Org-wide audit of 25 posts: only the 2 created today are new, both status=draft. All others predate this change (12 sent + 8 draft from the 2026-06-07 batch, 3 older sent).
+- Observation, not a defect: posts.json marks all 20 records `sent_to_buffer`, but Buffer shows 12 of that batch as sent and 8 still draft. `sent_to_buffer` means "handed to Buffer", not "published" - the two statuses are not meant to track each other.
+- Verified: `npm run check` PASS; `npm test` 55/55; `npm run lint:compositions` 3 ok; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `posts.json` unmodified.
+- Results table in `plans/output-testing/instagram-reel-support.md` now reads PASSED pending one human check.
+- Manual follow-up: (1) watch all three reels end to end for pacing - the only check never performed; (2) decide whether to publish or delete the two Buffer drafts; the Cloudinary assets must stay while the drafts exist since Buffer fetches media from those URLs.
+
+2026-08-04 Output testing ACCEPTED for instagram-reel-support.
+- Human viewed all three rendered reels and approved them on look and pacing. No changes requested to composition, timing, or brand treatment. `plans/output-testing/instagram-reel-support.md` verdict set to ACCEPTED.
+- Enhancement raised at acceptance and explicitly deferred: the reels are silent and would benefit from background music. `audioPath` is already carried in the schema but unused - the spec recorded that as a deliberate assumption for this iteration. This is a separate future change, NOT part of instagram-reel-support.
+- Note for whoever picks up the music work: `hyperframes` has a `beats` command (detect beats in a music track, writes beats/<audio>.json), which suggests beat-synced pacing is feasible. Licensing for any track is an open question and is a human decision.
+- Still open, not blocking archive: the two Buffer drafts (6a720c43672517345444aad9 shouldShareToFeed=true, 6a720c89f57e7ef8ca948d3e shouldShareToFeed=false) await a publish-or-delete decision. Their Cloudinary assets must stay while the drafts exist.
+- Change is ready for `bwh-archive-change`.
+
+2026-08-04 Archived instagram-reel-support, then committed and pushed.
+- Archive bundle: `plans/archive/2026-08-04-instagram-reel-support/` with manifest.md and five artifacts (discovery, specs, tasks, reviews, output-testing). Copies verified md5-identical to originals before the originals were removed; spec and task record set to terminal state ARCHIVED.
+- Kept in place: `plans/README.md` (shared, multi-change) and all source-of-truth documents (README.md, CLAUDE.md/AGENTS.md, adapter, posts.example.json, posts.json, this log).
+- Branch `feature/instagram-reel-support` pushed; PR #1 opened at https://github.com/simplybenuk/wolds-record-social-media/pull/1. Human chose feature-branch-plus-PR over committing to main, which sets the precedent for the adapter's still-open branch/commit policy placeholder.
+- Four grouped commits: f9d4155 workflow scaffold, 7b10ae5 reel pipeline, 9496673 docs, 410450b archive. Note the shouldShareToFeed decision could not be split into its own commit - it touches the same files as the pipeline commit and interactive staging is unavailable - so it is described within 7b10ae5.
+- Pre-commit secret scan clean: only .env.example placeholders matched; `.env` and `posts.testing.json` are both git-ignored and confirmed excluded.
+- Verified on the committed tree: `npm run check` PASS, `npm test` 55/55, `npm run lint:compositions` 3 ok, `npm run posts:check` 0 ready / 0 blocked / 20 sent, and `git diff 7b8bc9c HEAD -- posts.json` empty (live data untouched by the whole change).
+- Manual follow-up: human intends to publish the two Buffer drafts; their Cloudinary assets must remain while referenced. Background music remains deferred to a separate change.

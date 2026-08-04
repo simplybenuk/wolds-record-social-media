@@ -163,6 +163,166 @@ Instagram-specific note: Buffer requires Instagram drafts to include at least on
 "publicImageUrl": "https://..."
 ```
 
+## Automation v1 — Reels
+
+The repo renders both static posts and vertical Reel videos from the same `posts.json`.
+
+### Architecture
+
+```text
+posts.json record
+↓
+format: "image"                     format: "reel"
+↓                                   ↓
+instagram.html + Playwright         video/compositions/*.html + HyperFrames
+↓ PNG                               ↓ MP4 (1080x1920)
+↓                                   ↓
+Cloudinary /image/upload            Cloudinary /video/upload
+↓ publicImageUrl                    ↓ publicVideoUrl
+↓                                   ↓
+Buffer draft: assets[].image        Buffer draft: assets[].video
+↓
+Final scheduling and publishing happen inside Buffer. Nothing auto-publishes.
+```
+
+`format` is optional. **A record with no `format` is treated as a static image**, so every pre-existing post behaves exactly as before. The rule lives in one place: `resolveFormat()` in `scripts/lib/content.mjs`.
+
+### Dependencies
+
+- Node.js >= 22
+- FFmpeg and FFprobe (HyperFrames requires them for encoding)
+- Chrome headless shell (fetched by HyperFrames, separate from Playwright's Chromium)
+- `hyperframes` (pinned dev dependency), `playwright-core`
+
+### HyperFrames setup
+
+```bash
+npm install
+npx hyperframes browser ensure   # fetch the Chrome headless shell
+npx hyperframes doctor           # verify Node, FFmpeg and Chrome
+```
+
+`doctor` also reports optional whisper / TTS / MusicGen components. **These are not needed** — Reels are silent by design in this iteration.
+
+Telemetry is disabled in this repo (`npx hyperframes telemetry disable`). It defaults to on and reports anonymous usage to HeyGen; re-enable with `telemetry enable` if you ever want it.
+
+### Supported templates
+
+| Template | Sequence | Required fields |
+| --- | --- | --- |
+| `three-point-tip` | hook → point 1 → point 2 → point 3 → branded CTA | exactly 3 `points` |
+| `product-feature` | headline → screenshot(s) → benefit → branded CTA | 1+ `screenshots` (benefit uses `points[0]`) |
+| `photo-story` | opening photo → 2–3 photo/caption scenes → closing slide | 2–3 `scenes` |
+
+All render at 1080×1920, 30fps, in brand colours, with calm motion, generous whitespace, Instagram-safe margins, and no reliance on audio.
+
+### Reel JSON
+
+```json
+{
+  "id": "wolds-record-reel-001",
+  "format": "reel",
+  "service": "instagram",
+  "instagramType": "reel",
+  "status": "draft",
+  "template": "three-point-tip",
+  "kicker": "Wolds Record",
+  "headline": "3 signs your client records are fighting you",
+  "points": [
+    "Notes live in several places",
+    "Reports take hours",
+    "Progress is hard to show"
+  ],
+  "cta": "Built for canine therapists",
+  "photoPath": "assets/photos/dog-image.png",
+  "logoPath": "assets/logos/wolds-record-logo-transparent-small.png",
+  "duration": 12,
+  "caption": "...",
+  "hashtags": ["caninemassage"],
+  "altText": "..."
+}
+```
+
+`duration` is whole seconds, 3–90, defaulting to 12. `photo-story` uses `scenes: [{ "photoPath": "...", "caption": "..." }]` instead of `points`.
+
+### Editing and previewing
+
+Open `instagram.html`, load your JSON, and switch the format to **Reel**. You get template selection, Reel field editors, and a scaled preview with a scrubber and timeline showing true relative pacing. The browser cannot encode video — the editor shows the render command to copy.
+
+For full-fidelity motion checking:
+
+```bash
+npx hyperframes preview
+```
+
+### Render and upload
+
+```bash
+node scripts/render-video.mjs posts.json wolds-record-reel-001
+node scripts/prepare-video.mjs posts.json wolds-record-reel-001   # render + upload + write-back
+```
+
+Output goes to `generated/<id>.mp4`, with the resolved variables alongside it as `generated/<id>.variables.json` (useful when debugging a composition).
+
+Batch processing routes automatically by format:
+
+```bash
+node scripts/process-posts.mjs posts.json --prepare --limit=10
+node scripts/check-posts.mjs posts.json
+```
+
+### Buffer draft flow for Reels
+
+A Reel needs `publicVideoUrl` before it can reach Buffer — Buffer fetches media over the public internet and cannot read `generated/`. The draft payload is:
+
+```json
+"assets": [{ "video": { "url": "https://...", "metadata": { "thumbnailOffset": 2000 } } }]
+```
+
+`thumbnailOffset` is the millisecond mark used for the Reel thumbnail (default 2000, overridable per post with `"thumbnailOffset"`). All three templates hold a settled opening frame at 2s.
+
+**Feed sharing.** A Reel is also cross-posted to the main Instagram grid by default — this is a deliberate reach-over-curation choice for this account. Set `"shouldShareToFeed": false` on a post to keep that Reel in the Reels tab only. The value must be a real boolean; a string like `"false"` is rejected rather than quietly treated as true. `check-posts` prints the effective value as `shareToFeed=` on every Reel, so a defaulted `true` is never invisible. Instagram ignores the field on static image posts, where it is sent only to keep the pre-Reel payload unchanged.
+
+```bash
+node scripts/create-buffer-draft.mjs posts.json wolds-record-reel-001 --dry-run
+node scripts/create-buffer-draft.mjs posts.json wolds-record-reel-001 --write-back
+```
+
+### Content rules for Reels
+
+A Reel is rejected before rendering unless it has a `headline`, a `cta`, and the content its template needs: exactly 3 `points` for `three-point-tip`; at least one screenshot **and** a benefit statement in `points[0]` for `product-feature`; 2–3 `scenes`, each with both a `photoPath` and a `caption`, for `photo-story`.
+
+This is deliberate. The compositions ship with placeholder copy for authoring, and an empty field used to leave that placeholder in the rendered video — a reel missing a caption would burn text the operator never wrote into a publishable MP4. Compositions now clear empty fields instead of falling back, and validation stops such a record reaching the renderer. If you see a blank slide, the content is missing; fill it in rather than working around it.
+
+### Tests
+
+```bash
+npm test                    # schema, routing, filenames, validation, Buffer payloads,
+                            # preview/render pacing parity, placeholder-content guards
+npm run check               # syntax check of every script
+npm run lint:compositions   # lint all three reel compositions
+```
+
+`npm run lint:compositions` exists because `hyperframes lint` takes a *project directory* containing an `index.html`. Pointed at this repo it reports "No composition found", scans zero files, and still returns `errorCount: 0` — which reads exactly like a pass. The script builds a proper harness per composition and fails loudly if nothing was scanned.
+
+### Troubleshooting
+
+- **`Cannot find /usr/bin/google-chrome`** when rendering a *static* post — set `PLAYWRIGHT_CHROME_PATH` to your Chrome/Chromium binary. This affects the PNG path only; Reel rendering uses HyperFrames' own Chrome.
+- **`Variable "points" expected string, got array`** — the list fields cross into HyperFrames JSON-encoded because it has no array variable type. `reelVariables()` handles this; don't "simplify" it away.
+- **Every Reel comes out 12s** — a composition has regained a static `data-duration`. It is read at compile time, before the `duration` variable applies. Remove it.
+- **`JavaScript heap out of memory` during render** — raise the heap (`NODE_OPTIONS=--max-old-space-size=8192`) or pass `--workers 1`.
+- **Composition not found** — `render-video.mjs` resolves `video/compositions/<template>.html`; the template name must match exactly.
+- **Preview pacing disagrees with the MP4** — the weights in `buildScenes()` (`instagram.html`) and `video/compositions/*.html` have drifted apart. `npm test` guards this.
+
+### Known limitations
+
+- No audio, voiceover, or music. `audioPath` exists in the schema but is unused.
+- `product-feature` has no real example: the repo contains no product screenshots, only logos and photos.
+- Reels are silent-readable by design; there is no caption-burn-in or subtitle support.
+- Rendering is local and single-machine: roughly 30s for a 12s Reel.
+- Cloudinary video consumes credits far faster than images. Watch quota.
+- The editor preview approximates layout; only the rendered MP4 is authoritative.
+
 ---
 
 Goal:

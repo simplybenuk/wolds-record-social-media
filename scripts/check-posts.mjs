@@ -3,6 +3,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { duplicateIds, reelIssues, resolveFormat, resolveShareToFeed } from "./lib/content.mjs";
+
 function usage(){
   console.log(`Usage:
   node scripts/check-posts.mjs <posts-json>
@@ -38,23 +40,60 @@ function isInstagramPost(post){
     || Boolean(post.instagramType);
 }
 
-function postIssues(post){
+function formatOf(post){
+  try{
+    return resolveFormat(post);
+  } catch(err){
+    return undefined;
+  }
+}
+
+function postIssues(post, format){
   const issues = [];
 
   if(!post.id) issues.push("missing id");
+  if(!format) issues.push(`unknown format "${post.format}"`);
   if(!hasText(post)) issues.push("missing caption/hashtags");
 
+  if(format === "reel"){
+    issues.push(...reelIssues(post, { checkAssets: false }));
+  }
+
   if(isInstagramPost(post)){
-    if(!post.instagramType && !post.postType){
+    const declaredType = post.instagramType || post.postType;
+
+    if(!declaredType){
       issues.push("missing instagramType");
+    } else if(format){
+      // `format` picks the asset shape, `instagramType` labels it for Buffer.
+      // A mismatch produces a malformed draft, so flag it rather than guessing.
+      const normalised = String(declaredType).trim().toLowerCase();
+
+      if(format === "reel" && normalised !== "reel"){
+        issues.push(`instagramType "${declaredType}" conflicts with format "reel"`);
+      } else if(format !== "reel" && normalised === "reel"){
+        issues.push(`instagramType "reel" conflicts with format "${format}"`);
+      }
     }
 
-    if(!post.publicImageUrl){
+    if(format === "reel"){
+      if(!post.publicVideoUrl){
+        issues.push("missing publicVideoUrl");
+      }
+    } else if(!post.publicImageUrl){
       issues.push("missing publicImageUrl");
+    }
+
+    // The draft creator refuses a non-boolean here, so catch it at check time
+    // rather than at the point of writing to Buffer.
+    try{
+      resolveShareToFeed(post);
+    } catch(err){
+      issues.push(err.message);
     }
   }
 
-  return issues;
+  return [...new Set(issues)];
 }
 
 function statusLabel(post, issues){
@@ -86,18 +125,30 @@ function main(){
   };
 
   for(const post of posts){
-    const issues = postIssues(post);
+    const format = formatOf(post);
+    const issues = postIssues(post, format);
     const label = statusLabel(post, issues);
     counts[label] += 1;
 
     const parts = [
       `[${label}]`,
       post.id || "(missing id)",
+      `format=${format || post.format || "unknown"}`,
       `status=${post.status || "unset"}`
     ];
 
     if(post.bufferPostId){
       parts.push(`bufferPostId=${post.bufferPostId}`);
+    }
+
+    // Cross-posting a Reel to the grid is not visible anywhere in the record
+    // when it is left to the default, so state the effective value.
+    if(format === "reel"){
+      try{
+        parts.push(`shareToFeed=${resolveShareToFeed(post)}`);
+      } catch{
+        parts.push("shareToFeed=invalid");
+      }
     }
 
     if(issues.length){
@@ -107,7 +158,15 @@ function main(){
     console.log(parts.join(" | "));
   }
 
+  const duplicates = duplicateIds(posts);
+
   console.log("");
+
+  if(duplicates.length){
+    console.log(`Duplicate ids: ${duplicates.join(", ")}`);
+    console.log("");
+  }
+
   console.log(`Summary: ${counts.ready} ready, ${counts.blocked} blocked, ${counts.sent} sent`);
 }
 

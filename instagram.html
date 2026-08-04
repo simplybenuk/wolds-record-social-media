@@ -144,6 +144,269 @@
       border:1px solid rgba(0,0,0,.1);
     }
 
+    .hidden{display:none !important}
+
+    .formatSwitch{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    .formatSwitch button{
+      background:transparent;
+      color:var(--forest);
+      border:1px solid var(--forest);
+    }
+
+    .formatSwitch button[aria-pressed="true"]{
+      background:var(--forest);
+      color:var(--sand);
+    }
+
+    .sceneRow{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:10px;
+      background:#fbfaf7;
+    }
+
+    .sceneRow h3{
+      margin:0 0 8px;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--sage);
+    }
+
+    .issues{
+      border:1px solid var(--amber);
+      background:#fdf6e8;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      line-height:1.5;
+      color:var(--navy);
+      margin-bottom:14px;
+    }
+
+    .issues ul{margin:6px 0 0;padding-left:18px}
+
+    .issues.ok{border-color:var(--forest);background:#eef4ee}
+
+    .cmd{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .cmd input{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:12px;
+      background:var(--sand);
+    }
+
+    .cmd button{white-space:nowrap}
+
+    /* Reel preview */
+    .reelStage{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      width:100%;
+    }
+
+    .reelFrame{
+      position:relative;
+      width:324px;
+      height:576px;
+      border-radius:18px;
+      overflow:hidden;
+      background:var(--sand);
+      box-shadow:0 14px 40px rgba(20,40,54,.18);
+      flex:none;
+    }
+
+    .reelCanvas{
+      position:absolute;
+      top:0;
+      left:0;
+      width:1080px;
+      height:1920px;
+      transform-origin:top left;
+      transform:scale(.3);
+      background:var(--sand);
+    }
+
+    .reelScene{
+      position:absolute;
+      inset:0;
+      display:none;
+      flex-direction:column;
+      justify-content:center;
+      gap:48px;
+      padding:190px 110px 240px;
+      font-family: Montserrat, system-ui, Arial, sans-serif;
+    }
+
+    .reelScene.is-active{display:flex}
+
+    .reelScene .sceneInner{
+      opacity:0;
+      transform:translateY(28px);
+      transition:opacity .45s ease, transform .45s ease;
+    }
+
+    .reelScene.is-active .sceneInner{
+      opacity:1;
+      transform:translateY(0);
+    }
+
+    .reelScene .kick{
+      font-size:44px;
+      font-weight:700;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--sage);
+      margin-bottom:36px;
+    }
+
+    .reelScene .head{
+      font-size:104px;
+      font-weight:800;
+      line-height:1.08;
+      color:var(--navy);
+      white-space:pre-wrap;
+    }
+
+    .reelScene .lede{
+      font-size:60px;
+      font-weight:600;
+      line-height:1.3;
+      color:var(--navy);
+      white-space:pre-wrap;
+    }
+
+    .reelScene .index{
+      font-size:150px;
+      font-weight:800;
+      color:var(--amber);
+      line-height:1;
+      margin-bottom:28px;
+    }
+
+    .reelScene .ctaText{
+      font-size:88px;
+      font-weight:800;
+      line-height:1.15;
+      color:var(--forest);
+      white-space:pre-wrap;
+    }
+
+    .reelScene .handle{
+      position:absolute;
+      left:110px;
+      bottom:150px;
+      font-size:40px;
+      font-weight:600;
+      color:var(--sage);
+    }
+
+    .reelScene .rule{
+      width:220px;
+      height:8px;
+      background:var(--forest);
+      border-radius:4px;
+    }
+
+    .reelScene .shot{
+      width:100%;
+      height:820px;
+      border-radius:36px;
+      background:#fff center/contain no-repeat;
+      border:6px solid rgba(20,40,54,.08);
+    }
+
+    .reelScene.photo{
+      justify-content:flex-end;
+      padding:0;
+    }
+
+    .reelScene.photo .photoFill{
+      position:absolute;
+      inset:0;
+      background:var(--navy) center/cover no-repeat;
+    }
+
+    .reelScene.photo .photoShade{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(to bottom, rgba(20,40,54,0) 35%, rgba(20,40,54,.82) 100%);
+    }
+
+    .reelScene.photo .sceneInner{
+      position:relative;
+      padding:0 110px 300px;
+    }
+
+    .reelScene.photo .handle{color:rgba(244,241,236,.85)}
+
+    .reelScene.photo .head,
+    .reelScene.photo .lede{color:var(--sand)}
+
+    .reelScene .logo{
+      position:absolute;
+      top:150px;
+      left:110px;
+      max-width:360px;
+      max-height:120px;
+    }
+
+    .reelTimeline{
+      width:100%;
+      max-width:540px;
+      display:flex;
+      gap:4px;
+      height:34px;
+    }
+
+    .chip{
+      flex:none;
+      border-radius:8px;
+      background:#ded8cc;
+      color:var(--navy);
+      font-size:11px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      padding:0 4px;
+      white-space:nowrap;
+    }
+
+    .chip.is-active{background:var(--forest);color:var(--sand)}
+
+    .reelControlsBar{
+      width:100%;
+      max-width:540px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .reelControlsBar input[type="range"]{flex:1}
+
+    .time{
+      font-variant-numeric:tabular-nums;
+      font-size:12px;
+      font-weight:700;
+      color:var(--sage);
+      min-width:86px;
+      text-align:right;
+    }
+
     @media(max-width:900px){
       .app{grid-template-columns:1fr}
       .controls{order:2}
@@ -160,22 +423,33 @@
   <main class="app">
     <section class="controls">
       <div class="field">
-        <label for="aspectRatio">Post size</label>
-        <select id="aspectRatio">
-          <option value="portrait" selected>Portrait feed — 1080 × 1350</option>
-          <option value="square">Square feed — 1080 × 1080</option>
-          <option value="landscape">Landscape feed — 1080 × 566</option>
-        </select>
+        <label>Format</label>
+        <div class="formatSwitch">
+          <button type="button" id="formatImage" aria-pressed="true">Image</button>
+          <button type="button" id="formatReel" aria-pressed="false">Reel</button>
+        </div>
+        <div class="hint">Records with no <code>format</code> field load as Image.</div>
       </div>
 
-      <div class="field">
-        <label for="template">Template</label>
-        <select id="template">
-          <option value="hook">Hook slide</option>
-          <option value="problem">Problem slide</option>
-          <option value="feature">Feature / benefit slide</option>
-          <option value="cta">CTA slide</option>
-        </select>
+      <div class="imageOnly">
+        <div class="field">
+          <label for="aspectRatio">Post size</label>
+          <select id="aspectRatio">
+            <option value="portrait" selected>Portrait feed — 1080 × 1350</option>
+            <option value="square">Square feed — 1080 × 1080</option>
+            <option value="landscape">Landscape feed — 1080 × 566</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="template">Template</label>
+          <select id="template">
+            <option value="hook">Hook slide</option>
+            <option value="problem">Problem slide</option>
+            <option value="feature">Feature / benefit slide</option>
+            <option value="cta">CTA slide</option>
+          </select>
+        </div>
       </div>
 
       <div class="field">
@@ -200,6 +474,84 @@
         <button class="secondary" id="nextPost" type="button">Next</button>
       </div>
 
+      <div class="reelOnly hidden" id="reelFields">
+        <div class="field">
+          <label for="reelTemplate">Reel template</label>
+          <select id="reelTemplate">
+            <option value="three-point-tip">Three point tip</option>
+            <option value="product-feature">Product feature</option>
+            <option value="photo-story">Photo story</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="reelKicker">Kicker</label>
+          <input id="reelKicker" placeholder="Wolds Record" />
+        </div>
+
+        <div class="field">
+          <label for="reelHeadline">Headline</label>
+          <textarea id="reelHeadline" placeholder="3 signs your client records are fighting you"></textarea>
+          <div class="hint">Line breaks are preserved.</div>
+        </div>
+
+        <div class="field reelPoints">
+          <label for="reelPoint1">Points (exactly 3)</label>
+          <input id="reelPoint1" placeholder="Point 1" />
+          <input id="reelPoint2" placeholder="Point 2" style="margin-top:8px" />
+          <input id="reelPoint3" placeholder="Point 3" style="margin-top:8px" />
+        </div>
+
+        <div class="field reelScreenshots">
+          <label for="reelScreenshotList">Screenshots</label>
+          <textarea id="reelScreenshotList" placeholder="assets/screenshots/dog-profile.png&#10;assets/screenshots/session-notes.png"></textarea>
+          <div class="hint">One path per line, in scene order.</div>
+        </div>
+
+        <div class="field reelScenes">
+          <label>Scenes (2–3)</label>
+          <div class="sceneRow">
+            <h3>Scene 1</h3>
+            <input id="reelScene1Photo" placeholder="assets/photos/example.jpg" />
+            <input id="reelScene1Caption" placeholder="Caption" style="margin-top:8px" />
+          </div>
+          <div class="sceneRow">
+            <h3>Scene 2</h3>
+            <input id="reelScene2Photo" placeholder="assets/photos/example.jpg" />
+            <input id="reelScene2Caption" placeholder="Caption" style="margin-top:8px" />
+          </div>
+          <div class="sceneRow">
+            <h3>Scene 3 (optional)</h3>
+            <input id="reelScene3Photo" placeholder="assets/photos/example.jpg" />
+            <input id="reelScene3Caption" placeholder="Caption" style="margin-top:8px" />
+          </div>
+          <div class="hint">Leave scene 3 blank for a two-scene story.</div>
+        </div>
+
+        <div class="field">
+          <label for="reelCta">CTA</label>
+          <input id="reelCta" placeholder="Join the waitlist — link in bio." />
+        </div>
+
+        <div class="row">
+          <div class="field reelPhoto">
+            <label for="reelPhotoPath">Photo path</label>
+            <input id="reelPhotoPath" placeholder="assets/photos/example.jpg" />
+          </div>
+          <div class="field">
+            <label for="reelLogoPath">Logo path</label>
+            <input id="reelLogoPath" placeholder="assets/logos/wolds-record.png" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reelDuration">Duration (seconds)</label>
+          <input id="reelDuration" type="number" min="3" max="90" step="1" value="12" />
+          <div class="hint">Whole seconds, 3–90. Default 12.</div>
+        </div>
+      </div>
+
+      <div class="imageOnly">
       <div class="field">
         <label for="kicker">Small label</label>
         <input id="kicker" value="Wolds Record" />
@@ -275,6 +627,7 @@ Not everyone.</textarea>
           <div class="swatch" style="background:#666E6B" title="Sage"></div>
         </div>
       </div>
+      </div>
 
       <div class="field">
         <label for="caption">Caption</label>
@@ -292,9 +645,28 @@ Not everyone.</textarea>
         <textarea id="altText"></textarea>
       </div>
 
-      <div class="buttons">
+      <div class="buttons imageOnly">
         <button id="download">Download PNG</button>
         <button class="secondary" id="reset">Reset text</button>
+      </div>
+
+      <!-- Validation panel. Lives outside .reelOnly so record-level problems (an
+           invalid `format`, for example) are still visible while the editor has
+           degraded to the image form. -->
+      <div id="reelIssues" class="issues hidden">Reel checks</div>
+
+      <div class="reelOnly hidden">
+        <div class="field">
+          <label for="renderCommand">Render this Reel</label>
+          <div class="cmd">
+            <input id="renderCommand" readonly value="node scripts/render-video.mjs posts.json &lt;id&gt;" />
+            <button class="secondary" id="copyCommand" type="button">Copy</button>
+          </div>
+          <div class="hint">
+            Save the JSON first, then run this in the repo root. The browser cannot render video itself —
+            the MP4 comes from the Node renderer.
+          </div>
+        </div>
       </div>
 
       <div class="buttons">
@@ -302,18 +674,39 @@ Not everyone.</textarea>
         <button class="secondary" id="saveJson" type="button">Save posts.json</button>
       </div>
 
-      <p class="hint">
+      <p class="hint imageOnly">
         Portrait is best for feed carousels. Square is safer for grid aesthetics.
         Landscape exists because Instagram allows it, not because it is your best mate.
       </p>
     </section>
 
     <section class="previewWrap">
-      <div class="canvasShell">
-        <canvas id="canvas" width="1080" height="1350"></canvas>
+      <div class="imageOnly" style="width:100%">
+        <div class="canvasShell">
+          <canvas id="canvas" width="1080" height="1350"></canvas>
+        </div>
+        <div class="buttons" style="justify-content:center">
+          <button id="download2">Download PNG</button>
+        </div>
       </div>
-      <div class="buttons">
-        <button id="download2">Download PNG</button>
+
+      <div class="reelStage reelOnly hidden">
+        <div class="reelFrame">
+          <div class="reelCanvas" id="reelCanvas"></div>
+        </div>
+
+        <div class="reelTimeline" id="reelTimeline"></div>
+
+        <div class="reelControlsBar">
+          <button class="secondary" id="reelPlay" type="button">Play</button>
+          <input id="reelScrub" type="range" min="0" max="1000" value="0" />
+          <span class="time" id="reelTime">0.0s / 12s</span>
+        </div>
+
+        <p class="hint" style="max-width:540px;text-align:center">
+          1080 × 1920, shown at 30% scale. Scene lengths are proportional to the total duration,
+          so the pacing you see here is the pacing the renderer produces.
+        </p>
       </div>
     </section>
   </main>
@@ -336,6 +729,10 @@ let loadedPostsData = null;
 let postsFileHandle = null;
 let loadingPostAssets = Promise.resolve();
 let activePostIndex = 0;
+
+// Problems with the loaded record itself (as opposed to the live form), e.g. an
+// invalid `format`. Shown in the validation panel until the operator fixes them.
+let recordIssues = [];
 
 const $ = id => document.getElementById(id);
 
@@ -533,7 +930,8 @@ function populatePostSelect(){
 
   loadedPosts.forEach((post, index) => {
     const label = post.title || post.headline || post.id || `Post ${index + 1}`;
-    select.append(new Option(label.replace(/\s+/g, " ").trim(), String(index)));
+    const prefix = resolveFormatSafely(post).format === "reel" ? "[Reel] " : "";
+    select.append(new Option(prefix + label.replace(/\s+/g, " ").trim(), String(index)));
   });
 
   select.disabled = false;
@@ -588,6 +986,21 @@ async function loadImageFromPath(path){
 }
 
 async function applyPost(post){
+  // A malformed `format` must not stop the record loading: fall back to the image
+  // editor and report it in the validation panel so it can be seen and fixed.
+  const { format, issue } = resolveFormatSafely(post);
+
+  recordIssues = issue ? [issue] : [];
+
+  if(format === "reel"){
+    applyReelPost(post);
+    setFormat("reel");
+    loadingPostAssets = Promise.resolve();
+    return;
+  }
+
+  setFormat("image");
+
   if(post.aspectRatio) $("aspectRatio").value = post.aspectRatio;
   if(post.template) $("template").value = post.template;
   if(post.kicker) $("kicker").value = post.kicker;
@@ -619,6 +1032,15 @@ function saveCurrentPostFromForm(){
   const post = loadedPosts[activePostIndex];
 
   if(!post) return;
+
+  if(currentFormat === "reel"){
+    saveReelPost(post);
+    return;
+  }
+
+  // Only stamp format on records that already carry one, so pre-Reel records
+  // stay byte-identical when re-saved.
+  if(post.format !== undefined) post.format = "image";
 
   post.aspectRatio = $("aspectRatio").value;
   post.template = $("template").value;
@@ -661,6 +1083,10 @@ async function savePostsJson(){
 }
 
 window.renderPostForExport = async post => {
+  if(resolveFormat(post) === "reel"){
+    throw new Error(`Post "${post.id}" is a reel. Render it with: node scripts/render-video.mjs posts.json ${post.id}`);
+  }
+
   await applyPost(post);
   await loadingPostAssets;
   return canvas.toDataURL("image/png");
@@ -937,7 +1363,596 @@ function draw(){
   ctx.fillText("@woldsrecord", margin, H - 44);
 }
 
+/* ---------------------------------------------------------------------------
+   Reel authoring
+   Mirrors scripts/lib/content.mjs: a record without `format` is an image post.
+   The preview is a scaled CSS scene player, not a video renderer — the MP4 is
+   produced by scripts/render-video.mjs.
+--------------------------------------------------------------------------- */
+
+const DEFAULT_FORMAT = "image";
+const FORMATS = ["image", "reel"];
+const REEL_TEMPLATES = ["three-point-tip", "product-feature", "photo-story"];
+const REEL_DURATION_MIN = 3;
+const REEL_DURATION_MAX = 90;
+const REEL_DURATION_DEFAULT = 12;
+
+// Scene weights are not declared here: every scene in buildScenes() carries its own
+// explicit weight, mirrored from video/compositions/*.html. There is deliberately no
+// default, so a scene added without a weight fails loudly instead of inheriting a
+// plausible-looking number that the rendered MP4 does not use.
+
+const reelInputs = [
+  "reelTemplate",
+  "reelKicker",
+  "reelHeadline",
+  "reelPoint1",
+  "reelPoint2",
+  "reelPoint3",
+  "reelScreenshotList",
+  "reelScene1Photo",
+  "reelScene1Caption",
+  "reelScene2Photo",
+  "reelScene2Caption",
+  "reelScene3Photo",
+  "reelScene3Caption",
+  "reelCta",
+  "reelPhotoPath",
+  "reelLogoPath",
+  "reelDuration"
+];
+
+let currentFormat = "image";
+let reelScenes = [];
+let reelSceneEls = [];
+let reelChipEls = [];
+let reelTotal = REEL_DURATION_DEFAULT;
+let reelPlayhead = 0;
+let reelPlaying = false;
+let reelRaf = null;
+let reelLastFrame = 0;
+const reelImageCache = new Map();
+
+// Deliberate mirror of resolveFormat() in scripts/lib/content.mjs. The editor has to
+// run offline from file://, so it cannot import the library -- the two copies must be
+// changed together and must behave identically:
+//   absent / null / "" / whitespace  -> "image" (every pre-Reel record stays an image)
+//   a non-string                     -> a content error, not a TypeError from .trim()
+//   an unrecognised string           -> a content error, not a silent coercion
+function formatIssue(post){
+  const raw = post && post.format;
+
+  if(raw === undefined || raw === null || raw === "") return null;
+
+  // A hand-edited posts.json can contain anything, including `"format": 1`.
+  if(typeof raw !== "string"){
+    return `Invalid format ${JSON.stringify(raw)}. Expected one of: ${FORMATS.join(", ")}.`;
+  }
+
+  const format = raw.trim();
+
+  if(format === "" || FORMATS.includes(format)) return null;
+
+  return `Unknown format "${format}". Expected one of: ${FORMATS.join(", ")}.`;
+}
+
+function resolveFormat(post){
+  const issue = formatIssue(post);
+
+  if(issue) throw new Error(issue);
+
+  const raw = post && post.format;
+
+  return typeof raw === "string" && raw.trim() ? raw.trim() : DEFAULT_FORMAT;
+}
+
+// Non-throwing companion used by the UI. A bad format must not stop a record loading:
+// the editor falls back to the image form and reports the problem in the validation
+// panel, so the operator can see it and fix it. Only the export path (which feeds the
+// Node renderer) uses the throwing resolveFormat().
+function resolveFormatSafely(post){
+  const issue = formatIssue(post);
+
+  return { format: issue ? DEFAULT_FORMAT : resolveFormat(post), issue };
+}
+
+function setFormat(format, { rerender = true } = {}){
+  currentFormat = format === "reel" ? "reel" : "image";
+
+  $("formatImage").setAttribute("aria-pressed", String(currentFormat === "image"));
+  $("formatReel").setAttribute("aria-pressed", String(currentFormat === "reel"));
+
+  document.querySelectorAll(".imageOnly").forEach(node => node.classList.toggle("hidden", currentFormat !== "image"));
+  document.querySelectorAll(".reelOnly").forEach(node => node.classList.toggle("hidden", currentFormat !== "reel"));
+
+  if(!rerender) return;
+
+  if(currentFormat === "reel"){
+    updateReel();
+  } else {
+    pauseReel();
+    updateIssuePanel([]);
+    draw();
+  }
+}
+
+// Choosing a format explicitly resolves any complaint about the record's stored
+// format -- saving writes the chosen one back.
+$("formatImage").addEventListener("click", () => { recordIssues = []; setFormat("image"); });
+$("formatReel").addEventListener("click", () => { recordIssues = []; setFormat("reel"); });
+
+reelInputs.forEach(id => $(id).addEventListener("input", updateReel));
+$("reelTemplate").addEventListener("change", () => {
+  syncReelTemplateOption($("reelTemplate").value);
+  updateReel();
+});
+
+function reelDurationFromForm(){
+  const value = Math.round(Number($("reelDuration").value));
+
+  if(!Number.isFinite(value) || value <= 0) return REEL_DURATION_DEFAULT;
+
+  return Math.min(REEL_DURATION_MAX, Math.max(REEL_DURATION_MIN, value));
+}
+
+function linesToList(value){
+  return value.split("\n").map(line => line.trim()).filter(Boolean);
+}
+
+function scenesFromForm(){
+  return [1, 2, 3]
+    .map(n => ({
+      photoPath: $(`reelScene${n}Photo`).value.trim(),
+      caption: $(`reelScene${n}Caption`).value.trim()
+    }))
+    .filter(scene => scene.photoPath || scene.caption);
+}
+
+function collectReelFromForm(){
+  return {
+    format: "reel",
+    template: $("reelTemplate").value,
+    kicker: $("reelKicker").value,
+    headline: $("reelHeadline").value,
+    cta: $("reelCta").value,
+    points: [$("reelPoint1").value, $("reelPoint2").value, $("reelPoint3").value].map(p => p.trim()).filter(Boolean),
+    screenshots: linesToList($("reelScreenshotList").value),
+    scenes: scenesFromForm(),
+    photoPath: $("reelPhotoPath").value.trim(),
+    logoPath: $("reelLogoPath").value.trim(),
+    duration: reelDurationFromForm()
+  };
+}
+
+// An unrecognised template is preserved verbatim as a temporary option rather than
+// coerced to the first known one: silently selecting a different template would make
+// the next save rewrite the record and lose the original value. reelIssues() reports
+// it, so the operator sees the problem and chooses the replacement themselves.
+function syncReelTemplateOption(template){
+  const select = $("reelTemplate");
+  const stale = select.querySelector("option[data-unknown-template]");
+
+  if(stale && stale.value !== template) stale.remove();
+
+  if(!REEL_TEMPLATES.includes(template) && !select.querySelector("option[data-unknown-template]")){
+    const option = new Option(`${template || "(none)"} — unknown template`, template);
+    option.setAttribute("data-unknown-template", "true");
+    select.append(option);
+  }
+
+  select.value = template;
+}
+
+function applyReelPost(post){
+  const template = post.template === undefined || post.template === null ? "" : String(post.template);
+
+  syncReelTemplateOption(template);
+  $("reelKicker").value = post.kicker || "";
+  $("reelHeadline").value = post.headline || "";
+  $("reelCta").value = post.cta || "";
+  $("reelPhotoPath").value = post.photoPath || "";
+  $("reelLogoPath").value = post.logoPath || "";
+  $("reelDuration").value = Number.isFinite(post.duration) ? post.duration : REEL_DURATION_DEFAULT;
+
+  const points = Array.isArray(post.points) ? post.points : [];
+  $("reelPoint1").value = points[0] || "";
+  $("reelPoint2").value = points[1] || "";
+  $("reelPoint3").value = points[2] || "";
+
+  const screenshots = Array.isArray(post.screenshots) ? post.screenshots : [];
+  $("reelScreenshotList").value = screenshots.join("\n");
+
+  const scenes = Array.isArray(post.scenes) ? post.scenes : [];
+
+  [1, 2, 3].forEach(n => {
+    const scene = scenes[n - 1] || {};
+    $(`reelScene${n}Photo`).value = scene.photoPath || "";
+    $(`reelScene${n}Caption`).value = scene.caption || "";
+  });
+
+  $("caption").value = post.caption || "";
+  $("hashtags").value = hashtagsToTextarea(post.hashtags);
+  $("altText").value = post.altText || "";
+}
+
+function saveReelPost(post){
+  const reel = collectReelFromForm();
+
+  post.format = "reel";
+  post.instagramType = "reel";
+  post.template = reel.template;
+  post.kicker = reel.kicker;
+  post.headline = reel.headline;
+  post.cta = reel.cta;
+  post.photoPath = reel.photoPath;
+  post.logoPath = reel.logoPath;
+  post.duration = reel.duration;
+  post.caption = $("caption").value;
+  post.hashtags = textareaToHashtags($("hashtags").value);
+  post.altText = $("altText").value;
+
+  // Only write the arrays the chosen template uses, so switching template does
+  // not silently discard the other template's content.
+  if(reel.template === "three-point-tip") post.points = reel.points;
+  if(reel.template === "product-feature") post.screenshots = reel.screenshots;
+  if(reel.template === "photo-story") post.scenes = reel.scenes;
+}
+
+function reelIssues(reel){
+  const issues = [];
+
+  if(!REEL_TEMPLATES.includes(reel.template)){
+    issues.push(reel.template
+      ? `unknown reel template "${reel.template}" (expected: ${REEL_TEMPLATES.join(", ")})`
+      : `missing reel template (expected: ${REEL_TEMPLATES.join(", ")})`);
+  }
+
+  if(!reel.headline.trim()) issues.push("missing headline");
+
+  const rawDuration = Math.round(Number($("reelDuration").value));
+
+  if(!Number.isFinite(rawDuration) || rawDuration < REEL_DURATION_MIN || rawDuration > REEL_DURATION_MAX){
+    issues.push(`duration must be a whole number between ${REEL_DURATION_MIN} and ${REEL_DURATION_MAX} seconds`);
+  }
+
+  if(reel.template === "three-point-tip" && reel.points.length !== 3){
+    issues.push(`three-point-tip needs exactly 3 points (found ${reel.points.length})`);
+  }
+
+  if(reel.template === "product-feature" && !reel.screenshots.length){
+    issues.push("product-feature needs at least one screenshot");
+  }
+
+  if(reel.template === "photo-story"){
+    if(reel.scenes.length < 2 || reel.scenes.length > 3){
+      issues.push(`photo-story needs 2-3 scenes (found ${reel.scenes.length})`);
+    }
+
+    if(reel.scenes.some(scene => !scene.photoPath)){
+      issues.push("every photo-story scene needs a photo path");
+    }
+  }
+
+  return issues;
+}
+
+function buildScenes(reel){
+  const scenes = [];
+
+  if(reel.template === "three-point-tip"){
+    scenes.push({ kind: "opening", label: "Hook", kicker: reel.kicker, headline: reel.headline, weight: 3 });
+
+    reel.points.forEach((point, index) => {
+      scenes.push({ kind: "point", label: `Point ${index + 1}`, index: index + 1, lede: point, weight: 2.25 });
+    });
+
+    scenes.push({ kind: "cta", label: "CTA", cta: reel.cta, weight: 2.25 });
+  } else if(reel.template === "product-feature"){
+    scenes.push({ kind: "opening", label: "Headline", kicker: reel.kicker, headline: reel.headline, weight: 3 });
+
+    // product-feature.html:82 renders one (empty) shot scene when there are no
+    // screenshots, so the preview must show one too -- otherwise it reports a
+    // different scene count from the render.
+    const shots = reel.screenshots.length ? reel.screenshots : [""];
+    const count = shots.length;
+    const shotWeight = 5.25 / count;
+
+    shots.forEach((shot, index) => {
+      scenes.push({ kind: "shot", label: `Shot ${index + 1}`, shot, kicker: reel.kicker, weight: shotWeight });
+    });
+
+    // The composition renders a benefit statement between the shots and the CTA,
+    // sourced from points[0] with a kicker fallback. The preview must show it too.
+    scenes.push({
+      kind: "point",
+      label: "Benefit",
+      lede: (reel.points && reel.points[0]) || reel.kicker,
+      weight: 2.25
+    });
+
+    scenes.push({ kind: "cta", label: "CTA", cta: reel.cta, weight: 1.5 });
+  } else {
+    scenes.push({
+      kind: "story",
+      label: "Opening",
+      photo: reel.photoPath || (reel.scenes[0] && reel.scenes[0].photoPath) || "",
+      headline: reel.headline,
+      weight: 3
+    });
+
+    // photo-story.html:81 caps the story at 3 scenes and renders one placeholder
+    // when there are none, falling back to the cover photo per scene. Mirrored here
+    // so the preview never shows a different number of scenes from the render.
+    const story = reel.scenes.slice(0, 3);
+    const count = story.length || 1;
+    const storyWeight = 6 / count;
+
+    for(let index = 0; index < count; index++){
+      const scene = story[index] || {};
+
+      scenes.push({
+        kind: "story",
+        label: `Scene ${index + 1}`,
+        photo: scene.photoPath || reel.photoPath || "",
+        lede: scene.caption,
+        weight: storyWeight
+      });
+    }
+
+    scenes.push({ kind: "cta", label: "Closing", cta: reel.cta, weight: 3 });
+  }
+
+  // Weights are mirrored from video/compositions/*.html so the preview's pacing
+  // matches the rendered MP4. If a composition's weights change, change them here
+  // too -- otherwise the preview quietly lies about timing. There is no fallback on
+  // purpose: an unweighted scene is a bug in the code above, and must not silently
+  // acquire a default the composition would not use.
+  const weights = scenes.map(scene => {
+    if(!Number.isFinite(scene.weight)){
+      throw new Error(`Scene "${scene.label}" has no weight. Mirror it from video/compositions/${reel.template}.html.`);
+    }
+
+    return scene.weight;
+  });
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0) || 1;
+
+  let cursor = 0;
+
+  scenes.forEach((scene, index) => {
+    scene.duration = (weights[index] / totalWeight) * reel.duration;
+    scene.start = cursor;
+    cursor += scene.duration;
+  });
+
+  return scenes;
+}
+
+function reelImageSrc(path, apply){
+  if(!path) return;
+
+  if(reelImageCache.has(path)){
+    reelImageCache.get(path).then(src => { if(src) apply(src); });
+    return;
+  }
+
+  const pending = loadImageFromPath(path).then(img => (img ? img.src : ""));
+  reelImageCache.set(path, pending);
+  pending.then(src => { if(src) apply(src); });
+}
+
+function el(tag, className, text){
+  const node = document.createElement(tag);
+  if(className) node.className = className;
+  if(text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderReelScenes(reel){
+  const stage = $("reelCanvas");
+  const timeline = $("reelTimeline");
+
+  stage.innerHTML = "";
+  timeline.innerHTML = "";
+  reelSceneEls = [];
+  reelChipEls = [];
+
+  reelScenes.forEach(scene => {
+    const node = el("div", `reelScene ${scene.kind === "story" ? "photo" : scene.kind}`);
+    const inner = el("div", "sceneInner");
+
+    if(scene.kind === "story" && scene.photo){
+      const fill = el("div", "photoFill");
+      reelImageSrc(scene.photo, src => { fill.style.backgroundImage = `url("${src}")`; });
+      node.append(fill, el("div", "photoShade"));
+    }
+
+    if(scene.kicker) inner.append(el("div", "kick", scene.kicker));
+    if(scene.headline) inner.append(el("div", "head", scene.headline));
+    if(scene.index !== undefined) inner.append(el("div", "index", String(scene.index)));
+    if(scene.lede) inner.append(el("div", "lede", scene.lede));
+
+    if(scene.shot){
+      const shot = el("div", "shot");
+      reelImageSrc(scene.shot, src => { shot.style.backgroundImage = `url("${src}")`; });
+      inner.append(shot);
+    }
+
+    if(scene.kind === "cta"){
+      inner.append(el("div", "rule"));
+      inner.append(el("div", "ctaText", scene.cta || ""));
+    }
+
+    node.append(inner);
+
+    if(scene.kind !== "story" && reel.logoPath){
+      const logo = document.createElement("img");
+      logo.className = "logo";
+      reelImageSrc(reel.logoPath, src => { logo.src = src; });
+      node.append(logo);
+    }
+
+    node.append(el("div", "handle", "@woldsrecord"));
+    stage.append(node);
+    reelSceneEls.push(node);
+
+    const chip = el("div", "chip", `${scene.label} · ${scene.duration.toFixed(1)}s`);
+    chip.style.flex = `${scene.duration} 1 0`;
+    chip.title = `${scene.label}: ${scene.start.toFixed(1)}s → ${(scene.start + scene.duration).toFixed(1)}s`;
+    timeline.append(chip);
+    reelChipEls.push(chip);
+  });
+}
+
+function activeSceneIndex(time){
+  for(let i = reelScenes.length - 1; i >= 0; i--){
+    if(time >= reelScenes[i].start) return i;
+  }
+
+  return 0;
+}
+
+function setPlayhead(time){
+  reelPlayhead = Math.max(0, Math.min(reelTotal, time));
+
+  const active = activeSceneIndex(reelPlayhead);
+
+  reelSceneEls.forEach((node, index) => node.classList.toggle("is-active", index === active));
+  reelChipEls.forEach((chip, index) => chip.classList.toggle("is-active", index === active));
+
+  $("reelScrub").value = String(Math.round((reelPlayhead / (reelTotal || 1)) * 1000));
+  $("reelTime").textContent = `${reelPlayhead.toFixed(1)}s / ${reelTotal}s`;
+}
+
+function reelTick(timestamp){
+  if(!reelPlaying) return;
+
+  const delta = reelLastFrame ? (timestamp - reelLastFrame) / 1000 : 0;
+  reelLastFrame = timestamp;
+
+  let next = reelPlayhead + delta;
+
+  if(next >= reelTotal){
+    next = 0;
+    reelSceneEls.forEach(node => node.classList.remove("is-active"));
+  }
+
+  setPlayhead(next);
+  reelRaf = requestAnimationFrame(reelTick);
+}
+
+function playReel(){
+  if(reelPlaying || !reelScenes.length) return;
+
+  reelPlaying = true;
+  reelLastFrame = 0;
+  $("reelPlay").textContent = "Pause";
+  reelRaf = requestAnimationFrame(reelTick);
+}
+
+function pauseReel(){
+  reelPlaying = false;
+
+  if(reelRaf) cancelAnimationFrame(reelRaf);
+
+  reelRaf = null;
+  $("reelPlay").textContent = "Play";
+}
+
+$("reelPlay").addEventListener("click", () => {
+  if(reelPlaying) pauseReel(); else playReel();
+});
+
+$("reelScrub").addEventListener("input", () => {
+  pauseReel();
+  setPlayhead((Number($("reelScrub").value) / 1000) * reelTotal);
+});
+
+function updateReelFieldVisibility(template){
+  document.querySelectorAll(".reelPoints").forEach(node => node.classList.toggle("hidden", template !== "three-point-tip"));
+  document.querySelectorAll(".reelScreenshots").forEach(node => node.classList.toggle("hidden", template !== "product-feature"));
+  document.querySelectorAll(".reelScenes").forEach(node => node.classList.toggle("hidden", template !== "photo-story"));
+  document.querySelectorAll(".reelPhoto").forEach(node => node.classList.toggle("hidden", template !== "photo-story"));
+}
+
+function updateRenderCommand(){
+  const post = loadedPosts[activePostIndex];
+  const id = post && post.id ? post.id : "<id>";
+  $("renderCommand").value = `node scripts/render-video.mjs posts.json ${id}`;
+}
+
+function updateIssuePanel(issues){
+  const panel = $("reelIssues");
+
+  // Record-level problems come first: they explain why the editor may have degraded
+  // to the image form, and they outlive any single form re-render.
+  const all = recordIssues.concat(issues);
+
+  // In image mode the panel is only worth showing when it has something to say.
+  panel.classList.toggle("hidden", currentFormat !== "reel" && all.length === 0);
+  panel.classList.toggle("ok", all.length === 0);
+
+  if(!all.length){
+    panel.textContent = "Ready to render.";
+    return;
+  }
+
+  panel.innerHTML = currentFormat === "reel"
+    ? "<strong>Fix before rendering</strong>"
+    : "<strong>Fix this post</strong>";
+
+  const list = document.createElement("ul");
+  all.forEach(issue => list.append(el("li", null, issue)));
+  panel.append(list);
+}
+
+function updateReel(){
+  if(currentFormat !== "reel") return;
+
+  const reel = collectReelFromForm();
+
+  updateReelFieldVisibility(reel.template);
+  updateRenderCommand();
+  updateIssuePanel(reelIssues(reel));
+
+  reelTotal = reel.duration;
+  reelScenes = buildScenes(reel);
+
+  const wasPlaying = reelPlaying;
+
+  renderReelScenes(reel);
+  setPlayhead(Math.min(reelPlayhead, reelTotal));
+
+  if(wasPlaying){
+    reelLastFrame = 0;
+  }
+}
+
+$("copyCommand").addEventListener("click", async () => {
+  const input = $("renderCommand");
+  const text = input.value;
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+    } else {
+      input.removeAttribute("readonly");
+      input.select();
+      document.execCommand("copy");
+      input.setAttribute("readonly", "readonly");
+      input.blur();
+    }
+
+    $("copyCommand").textContent = "Copied";
+    setTimeout(() => { $("copyCommand").textContent = "Copy"; }, 1400);
+  } catch(err){
+    input.select();
+    alert("Could not copy automatically — the command is selected, press Ctrl+C.");
+  }
+});
+
 draw();
+setFormat("image", { rerender: false });
+updateReelFieldVisibility($("reelTemplate").value);
 </script>
 </body>
 </html>

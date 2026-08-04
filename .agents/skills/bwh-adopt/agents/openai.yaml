@@ -1,0 +1,4 @@
+interface:
+  display_name: "BWH Workflow Adopt"
+  short_description: "Install or update the BWH workflow"
+  default_prompt: "Use $bwh-adopt to install or update the BWH AI workflow in this project."
