@@ -1,0 +1,4 @@
+interface:
+  display_name: "BWH Archive Change"
+  short_description: "Archive completed change documentation safely"
+  default_prompt: "Use $bwh-archive-change to archive an accepted change and its temporary documentation."

@@ -1,0 +1,8 @@
+source: https://github.com/simplybenuk/bwh-ai-workflow.git
+source_path: /home/ben/.claude/plugins/cache/bwh-ai-workflow/bwh-ai-workflow/0.1.0
+revision: v0.1.0 (plugin package version; cache has no git metadata, so no commit SHA was available to pin)
+installed_at: 2026-08-03
+host: claude-code
+installed_paths: .claude/skills/bwh-*, .claude/contracts/
+adapter: adapters/wolds-record-social-media/README.md
+context_map: adapters/wolds-record-social-media/context-map.md
