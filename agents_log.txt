@@ -130,3 +130,12 @@
 - Note for whoever picks up the music work: `hyperframes` has a `beats` command (detect beats in a music track, writes beats/<audio>.json), which suggests beat-synced pacing is feasible. Licensing for any track is an open question and is a human decision.
 - Still open, not blocking archive: the two Buffer drafts (6a720c43672517345444aad9 shouldShareToFeed=true, 6a720c89f57e7ef8ca948d3e shouldShareToFeed=false) await a publish-or-delete decision. Their Cloudinary assets must stay while the drafts exist.
 - Change is ready for `bwh-archive-change`.
+
+2026-08-04 Archived instagram-reel-support, then committed and pushed.
+- Archive bundle: `plans/archive/2026-08-04-instagram-reel-support/` with manifest.md and five artifacts (discovery, specs, tasks, reviews, output-testing). Copies verified md5-identical to originals before the originals were removed; spec and task record set to terminal state ARCHIVED.
+- Kept in place: `plans/README.md` (shared, multi-change) and all source-of-truth documents (README.md, CLAUDE.md/AGENTS.md, adapter, posts.example.json, posts.json, this log).
+- Branch `feature/instagram-reel-support` pushed; PR #1 opened at https://github.com/simplybenuk/wolds-record-social-media/pull/1. Human chose feature-branch-plus-PR over committing to main, which sets the precedent for the adapter's still-open branch/commit policy placeholder.
+- Four grouped commits: f9d4155 workflow scaffold, 7b10ae5 reel pipeline, 9496673 docs, 410450b archive. Note the shouldShareToFeed decision could not be split into its own commit - it touches the same files as the pipeline commit and interactive staging is unavailable - so it is described within 7b10ae5.
+- Pre-commit secret scan clean: only .env.example placeholders matched; `.env` and `posts.testing.json` are both git-ignored and confirmed excluded.
+- Verified on the committed tree: `npm run check` PASS, `npm test` 55/55, `npm run lint:compositions` 3 ok, `npm run posts:check` 0 ready / 0 blocked / 20 sent, and `git diff 7b8bc9c HEAD -- posts.json` empty (live data untouched by the whole change).
+- Manual follow-up: human intends to publish the two Buffer drafts; their Cloudinary assets must remain while referenced. Background music remains deferred to a separate change.
