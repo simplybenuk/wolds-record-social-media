@@ -22,6 +22,14 @@ The first independent pass identified material gaps in attempt ownership and saf
 
 The follow-up verified durable attempt and retry relationships, prompt hashes and brand-pack versions, explicit interruption handling, application-wide sequential rendering with version checks, optimistic post mutations, safe and local errors, regeneration deduplication, retained previews/briefs across failures, official lockfile metadata, and a full mobile journey. An initial browser fixture used an invalid emphasis/headline combination before reaching its intended stale-write assertion; the fixture was corrected and the entire journey then passed independently.
 
+### Cycle 3 — clean-checkout verification (2026-08-08)
+
+The published commit `c412072` was re-verified from a fresh worktree and a `npm ci` install, because the preceding cycles ran in environments that reconstructed the branch from patches, could not reach the npm registry, or could not launch Chrome. That re-run found one regression the earlier cycles could not have observed.
+
+`scripts/run-ts-tests.mjs` emitted the esbuild bundle into an OS temp directory while marking `playwright-core` external. The bundled tests therefore resolved `playwright-core` by walking up from `/tmp`, never reaching the repository's `node_modules`, so every real render failed as `browser_unavailable`. Two integration tests failed on a clean checkout: the three-post fixture render and the regeneration replacement-preview case. The bundle is now written under `node_modules/.cache/wolds-studio-tests/` and removed after the run. Suite duration moved from 0.6 s to 12.4 s once real renders executed, confirming the earlier run was not exercising the browser at all.
+
+All gates then passed on the clean checkout, including the full 390×844 mobile journey and real 1080×1080 PNG output.
+
 ## Findings
 
 ### Blockers

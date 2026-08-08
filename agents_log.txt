@@ -153,3 +153,12 @@
 - Restored the reviewed branch from recorded development patches, regenerated the official dependency lock, and tightened clean-install TypeScript boundaries for the published Drizzle package.
 - Verified typecheck, production build, 60 legacy tests, posts validation, composition linting, lockfile provenance, diff hygiene, and unchanged `posts.json`; Chrome-based tests could not relaunch in the current restricted sandbox (`socket() Operation not permitted`) but retain the prior 94-test and mobile-review evidence.
 - Manual follow-up: run the prepared live OpenAI human-testing checklist using server-only `OPENAI_API_KEY`; do not publish from this slice.
+
+2026-08-08 22:32 UTC Clean-checkout verification of published commit c412072; fixed a test-harness regression.
+- Verified from a fresh `git worktree` plus `npm ci`, because prior evidence came from environments that reconstructed the branch from patches, had no npm registry access, or could not launch Chrome. This was the first full run of this exact commit with a working browser.
+- Defect found and fixed in `scripts/run-ts-tests.mjs`: the esbuild bundle was written to an OS temp directory while `playwright-core` stayed external, so the bundled tests could not resolve it from `/tmp` and every real render failed as `browser_unavailable`. Two integration tests failed on any clean checkout. The bundle is now emitted under `node_modules/.cache/wolds-studio-tests/` and removed after the run.
+- Evidence the fix restored real coverage: TS suite duration went from 0.6s to 12.4s and now writes genuine 1080x1080 PNGs.
+- Verified after the fix: `npm run check` (incl. `tsc --noEmit`) PASS; `npm test` 34/34 TS tests plus legacy suites PASS; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `npm run lint:compositions` 3 ok; `npm run build` PASS with the three campaign routes; `drizzle/0000_campaign_review.sql` applies to an empty SQLite database with foreign keys on; `npm run verify:mobile` full 390x844 journey PASS, 0 console errors, no overflow.
+- `posts.json` has no diff from `main`. No Buffer, Cloudinary, or Meta call occurred, and no live OpenAI request was made.
+- Advisory: `npm audit` reports 3 high-severity advisories, all transitive to Next.js 16.2.10 (next, postcss, sharp) with no fix at that version; registry latest is 16.3.0. Low practical risk while the app is loopback-only, but worth a bump before any wider exposure.
+- Manual follow-up: human output testing remains the open gate. No PR was opened for this branch; that decision is the human's.
