@@ -4,19 +4,38 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check scripts/render-post.mjs && node --check scripts/upload-cloudinary.mjs && node --check scripts/prepare-post.mjs && node --check scripts/process-posts.mjs && node --check scripts/create-buffer-draft.mjs && node --check scripts/check-posts.mjs && node --check scripts/mark-post-status.mjs && node --check scripts/list-buffer-channels.mjs && node --check scripts/render-video.mjs && node --check scripts/prepare-video.mjs && node --check scripts/lint-compositions.mjs",
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "check": "node --check scripts/render-post.mjs && node --check scripts/lib/static-image-renderer.mjs && node --check scripts/upload-cloudinary.mjs && node --check scripts/prepare-post.mjs && node --check scripts/process-posts.mjs && node --check scripts/create-buffer-draft.mjs && node --check scripts/check-posts.mjs && node --check scripts/mark-post-status.mjs && node --check scripts/list-buffer-channels.mjs && node --check scripts/render-video.mjs && node --check scripts/prepare-video.mjs && node --check scripts/lint-compositions.mjs && npm run typecheck",
     "posts:check": "node scripts/check-posts.mjs posts.json",
     "posts:prepare": "node scripts/prepare-post.mjs posts.json",
     "posts:render-video": "node scripts/render-video.mjs posts.json",
     "posts:prepare-video": "node scripts/prepare-video.mjs posts.json",
     "posts:process": "node scripts/process-posts.mjs posts.json",
-    "test": "node --test",
+    "test": "node --test test/*.test.mjs && node scripts/run-ts-tests.mjs",
+    "verify:mobile": "node scripts/verify-mobile.mjs",
     "lint:compositions": "node scripts/lint-compositions.mjs"
   },
   "dependencies": {
-    "playwright-core": "^1.53.0"
+    "drizzle-orm": "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-1.0.0-rc.4.tgz",
+    "next": "https://registry.npmjs.org/next/-/next-16.2.10.tgz",
+    "openai": "https://registry.npmjs.org/openai/-/openai-7.4.0.tgz",
+    "playwright-core": "^1.53.0",
+    "react": "https://registry.npmjs.org/react/-/react-19.2.7.tgz",
+    "react-dom": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.7.tgz",
+    "zod": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz"
   },
   "devDependencies": {
-    "hyperframes": "0.7.90"
+    "@tailwindcss/postcss": "https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.1.18.tgz",
+    "@types/node": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
+    "@types/react": "https://registry.npmjs.org/@types/react/-/react-19.2.17.tgz",
+    "@types/react-dom": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.3.tgz",
+    "esbuild": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
+    "hyperframes": "0.7.90",
+    "postcss": "https://registry.npmjs.org/postcss/-/postcss-8.5.25.tgz",
+    "tailwindcss": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.1.18.tgz",
+    "typescript": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz"
   }
 }

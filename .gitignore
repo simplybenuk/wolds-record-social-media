@@ -1,4 +1,8 @@
 .env
+.next/
+*.tsbuildinfo
+.test-build/
+data/
 generated/
 node_modules/
 posts.testing.json

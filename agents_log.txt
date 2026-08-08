@@ -139,3 +139,17 @@
 - Pre-commit secret scan clean: only .env.example placeholders matched; `.env` and `posts.testing.json` are both git-ignored and confirmed excluded.
 - Verified on the committed tree: `npm run check` PASS, `npm test` 55/55, `npm run lint:compositions` 3 ok, `npm run posts:check` 0 ready / 0 blocked / 20 sent, and `git diff 7b8bc9c HEAD -- posts.json` empty (live data untouched by the whole change).
 - Manual follow-up: human intends to publish the two Buffer drafts; their Cloudinary assets must remain while referenced. Background music remains deferred to a separate change.
+
+2026-08-04 Independent review marked wolds-record-campaign-review-slice READY FOR HUMAN TESTING.
+- Added `plans/reviews/wolds-record-campaign-review-slice.md`; verified typecheck, 94 tests, posts check, production build, dependency provenance, data/security boundaries, and a complete 390x844 mobile journey with zero console errors or overflow.
+- Manual follow-up: run one live OpenAI output test, assess brand/content/visual quality, and confirm photo publication rights; this slice must stop at local approval.
+
+2026-08-04 23:17 UTC Developed wolds-record-campaign-review-slice on `feature/wolds-record-campaign-review-slice`.
+- Added the Next/SQLite campaign app, fixed brand/generation/domain contracts, reusable static renderer, mobile review actions, migrations, tests, setup docs, and BWH task/output artifacts; legacy `posts.json` remained unchanged.
+- Verified `npm run check`, 94 tests, posts validation, production build, three Reel composition checks, clean data/security scans, and the complete 390x844 fixture flow; independent review is READY FOR HUMAN TESTING.
+- Manual follow-up: complete the prepared human checklist with one live OpenAI campaign, brand/visual judgment, and photo-rights confirmation; do not publish from this slice.
+
+2026-08-08 22:18 UTC Reconstructed and prepared wolds-record-campaign-review-slice for GitHub publication.
+- Restored the reviewed branch from recorded development patches, regenerated the official dependency lock, and tightened clean-install TypeScript boundaries for the published Drizzle package.
+- Verified typecheck, production build, 60 legacy tests, posts validation, composition linting, lockfile provenance, diff hygiene, and unchanged `posts.json`; Chrome-based tests could not relaunch in the current restricted sandbox (`socket() Operation not permitted`) but retain the prior 94-test and mobile-review evidence.
+- Manual follow-up: run the prepared live OpenAI human-testing checklist using server-only `OPENAI_API_KEY`; do not publish from this slice.

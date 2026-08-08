@@ -18,6 +18,10 @@ Approved posts are sent to Buffer as drafts or queued posts
 
 Human approval stays in the loop.
 
+## Current implementation status
+
+The first bounded Wolds Social Studio slice is implemented for Wolds Record static posts: mobile campaign brief entry, 1–6 fixture or live structured generations, SQLite persistence, sequential reuse of the existing canvas renderer, editing, one-post regeneration, and local approve/reject decisions. It deliberately stops before media hosting, Buffer, scheduling, and publication. Other brands, Reels in the application, deployment, authentication, and the broader dashboard remain future work.
+
 ## Core principles
 
 - Local-first, cheap to run, no extra cloud bill.
