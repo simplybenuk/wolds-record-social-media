@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "drizzle-orm": "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-1.0.0-rc.4.tgz",
-    "next": "https://registry.npmjs.org/next/-/next-16.2.10.tgz",
+    "next": "https://registry.npmjs.org/next/-/next-16.3.0.tgz",
     "openai": "https://registry.npmjs.org/openai/-/openai-7.4.0.tgz",
     "playwright-core": "^1.53.0",
     "react": "https://registry.npmjs.org/react/-/react-19.2.7.tgz",
