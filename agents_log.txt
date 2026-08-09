@@ -175,3 +175,7 @@
 - `posts.json` has no diff from `main`. No Buffer, Cloudinary, or Meta call occurred, and no live OpenAI request was made.
 - Also cleaned stale untracked copies of the discovery and spec documents out of the main working tree; both were superseded by the versions committed on this branch.
 - Manual follow-up: human output testing remains the open gate. Still no PR opened for this branch; that decision is the human's.
+
+2026-08-09 UTC Documented two setup gaps found while verifying the Next 16.3.0 bump.
+- `README.md` and `plans/output-testing/wolds-record-campaign-review-slice.md`: note the `PORT`/`APP_URL` override when port 3000 is already taken, that `verify:mobile` drives an already-running server rather than starting one, and that human testing should install with `npm ci`.
+- Documentation only; no code, dependency, or `posts.json` change, so no revalidation was required.
