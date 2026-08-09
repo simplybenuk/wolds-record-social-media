@@ -238,3 +238,14 @@ Verification: npm run check pass; npm test 50 pass / 0 fail; npm run posts:check
   npm run lint:compositions 3 ok; npm run build pass; Record render md5 regression
   PASS — still byte-identical.
 Manual follow-up: unchanged from the previous entry. No external service was contacted.
+
+2026-08-09 (local) — multi-brand campaign packs: Reel deferral comment (spec R3 second site)
+Files changed: video/brand/tokens.css (comment only — records that these tokens are
+  deliberately Record-only and are not resolved from the active brand pack, that every
+  composition links the file statically so a non-Record post renders Record colours here,
+  and points at spec R3 and the matching note in instagram.html).
+Reason: spec sec.141 / task 2 required the Reel deferral stated at both sites.
+  instagram.html:715 carried it; this file did not.
+Verification: npm run lint:compositions 3 ok, 0 failed. No behavioural change — CSS
+  comment only; no declaration, selector or token value touched.
+Manual follow-up: none. No external service was contacted.
