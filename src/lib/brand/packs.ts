@@ -41,7 +41,8 @@ export function enabledBrandPacks(): BrandPack[] {
 }
 
 export function brandPackById(id: string): BrandPack | undefined {
-  return PACKS[id];
+  // hasOwn guard: without it "toString" or "constructor" resolves to a function.
+  return Object.hasOwn(PACKS, id) ? PACKS[id] : undefined;
 }
 
 /** Throwing lookup for call sites that require a known brand. */
@@ -74,7 +75,9 @@ export function resolveBrand(value: string | null | undefined): BrandResolution 
     return { pack: requireBrandPack(RECORD_PACK_ID), warning: null };
   }
 
-  const canonical = LEGACY_BRAND_ALIASES[trimmed] ?? trimmed;
+  const canonical = Object.hasOwn(LEGACY_BRAND_ALIASES, trimmed)
+    ? LEGACY_BRAND_ALIASES[trimmed]
+    : trimmed;
   const pack = brandPackById(canonical);
 
   if (pack) {

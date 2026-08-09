@@ -19,9 +19,10 @@ export function createDatabase(path = process.env.SOCIAL_STUDIO_DB_PATH ?? "./da
     ")",
   ].join("\n"));
   /* Apply every migration named in the drizzle journal, in order, once each.
-     A migration that disables PRAGMA foreign_keys cannot run inside an explicit
-     transaction — SQLite ignores the pragma there — so those files run
-     statement by statement and re-enable foreign keys when they finish. */
+     SQLite's table-recreation procedure is "pragma outside, DDL inside": only
+     the PRAGMA foreign_keys statements must sit outside a transaction, and the
+     schema changes themselves belong in one so an interruption cannot leave a
+     half-swapped database. */
   const journal = JSON.parse(
     readFileSync(resolve(process.cwd(), "drizzle/meta/_journal.json"), "utf8"),
   ) as { entries: Array<{ idx: number; tag: string }> };
@@ -36,32 +37,57 @@ export function createDatabase(path = process.env.SOCIAL_STUDIO_DB_PATH ?? "./da
       resolve(process.cwd(), `drizzle/${entry.tag}.sql`),
       "utf8",
     );
-    const disablesForeignKeys = /PRAGMA\s+foreign_keys\s*=\s*OFF/i.test(sqlText);
-    const record = () =>
-      client.prepare("INSERT INTO __drizzle_migrations (tag, applied_at) VALUES (?, ?)").run(
-        entry.tag,
-        new Date().toISOString(),
+
+    /* Statements are split so the pragmas can be hoisted out of the
+       transaction. Matching is done per statement, not across the whole file,
+       so a comment mentioning the pragma cannot change how a migration runs. */
+    const statements = sqlText
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+    /* Only a statement that is *nothing but* the pragma is hoisted. A file with
+       no breakpoints is a single chunk of real DDL and must stay in the
+       transaction even though it opens with a pragma line. */
+    const isForeignKeyPragma = (statement: string) =>
+      /^PRAGMA\s+foreign_keys\s*=\s*(ON|OFF)\s*;?$/i.test(
+        statement.replace(/--[^\n]*/g, "").trim(),
       );
+    const disablesForeignKeys = statements.some(
+      (statement) => isForeignKeyPragma(statement) && /OFF/i.test(statement),
+    );
+    const body = statements.filter((statement) => !isForeignKeyPragma(statement));
 
-    if (disablesForeignKeys) {
-      sqlText
-        .split("--> statement-breakpoint")
-        .map((statement) => statement.trim())
-        .filter(Boolean)
-        .forEach((statement) => client.exec(statement));
-      record();
-      client.exec("PRAGMA foreign_keys = ON");
-      continue;
-    }
+    if (disablesForeignKeys) client.exec("PRAGMA foreign_keys = OFF");
 
-    client.exec("BEGIN IMMEDIATE");
     try {
-      client.exec(sqlText);
-      record();
-      client.exec("COMMIT");
-    } catch (error) {
-      client.exec("ROLLBACK");
-      throw error;
+      client.exec("BEGIN IMMEDIATE");
+      try {
+        for (const statement of body) client.exec(statement);
+
+        /* foreign_key_check reports violations as rows, never as an error, so
+           it has to be read back here — running it as a bare statement inside
+           the migration would prove nothing. */
+        if (disablesForeignKeys) {
+          const violations = client.prepare("PRAGMA foreign_key_check").all();
+          if (violations.length > 0) {
+            throw new Error(
+              `Migration ${entry.tag} left ${violations.length} foreign key violation(s); rolled back.`,
+            );
+          }
+        }
+
+        client.prepare("INSERT INTO __drizzle_migrations (tag, applied_at) VALUES (?, ?)").run(
+          entry.tag,
+          new Date().toISOString(),
+        );
+        client.exec("COMMIT");
+      } catch (error) {
+        client.exec("ROLLBACK");
+        throw error;
+      }
+    } finally {
+      // Always restored, including when the migration threw.
+      client.exec("PRAGMA foreign_keys = ON");
     }
   }
 

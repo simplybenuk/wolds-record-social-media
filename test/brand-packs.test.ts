@@ -9,8 +9,10 @@ import test from "node:test";
 import { createDatabase } from "../src/db/index.ts";
 import {
   RECORD_PACK_ID,
+  brandPackById,
   enabledBrandPacks,
   legacyRendererBrandFor,
+  requireBrandPack,
   resolveBrand,
 } from "../src/lib/brand/packs.ts";
 import { brandPackSchema } from "../src/features/campaigns/schemas.ts";
@@ -188,6 +190,133 @@ test("the widened constraint applies to a database already holding a Record camp
              VALUES (?, ?, 'sourlist', ?, 1, '2026-08-01', '2026-08-02', 'review', 'fixture', 'test', ?, ?)`,
           )
           .run("campaign-2", crypto.randomUUID(), "A brief for an unknown brand.", "t", "t"),
+      );
+    } finally {
+      database.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("a prototype member is not mistaken for a brand pack", () => {
+  for (const key of ["toString", "constructor", "valueOf", "__proto__"]) {
+    assert.equal(brandPackById(key), undefined, `${key} resolved to a pack`);
+    assert.throws(() => requireBrandPack(key), /Unknown brand pack/);
+    assert.equal(resolveBrand(key).pack.id, RECORD_PACK_ID);
+    assert.match(String(resolveBrand(key).warning), /Unrecognised brand/);
+  }
+});
+
+test("an interrupted table-swap migration leaves the database usable", () => {
+  const directory = mkdtempSync(join(tmpdir(), "wolds-migration-fail-"));
+  const path = join(directory, "interrupted.sqlite");
+
+  try {
+    const legacy = new DatabaseSync(path);
+    legacy.exec(
+      "CREATE TABLE __drizzle_migrations (id integer PRIMARY KEY, tag text NOT NULL UNIQUE, applied_at text NOT NULL)",
+    );
+    legacy.exec(readFileSync(resolve(process.cwd(), "drizzle/0000_campaign_review.sql"), "utf8"));
+    legacy
+      .prepare("INSERT INTO __drizzle_migrations (tag, applied_at) VALUES (?, ?)")
+      .run("0000_campaign_review", new Date().toISOString());
+    legacy
+      .prepare(
+        `INSERT INTO campaigns (id, submission_key, brand_id, brief, post_count, start_date,
+          end_date, status, generation_mode, model, created_at, updated_at)
+         VALUES (?, ?, 'record', ?, 1, '2026-08-01', '2026-08-02', 'review', 'fixture', 'test', ?, ?)`,
+      )
+      .run("campaign-1", crypto.randomUUID(), "A brief that must survive a failure.", "t", "t");
+    // A leftover table forces the swap to fail partway through.
+    legacy.exec("CREATE TABLE campaigns_new (wrong text)");
+    legacy.close();
+
+    assert.throws(() => createDatabase(path));
+
+    // The rollback must leave the original table and its rows intact.
+    const after = new DatabaseSync(path);
+    try {
+      const rows = after.prepare("SELECT id FROM campaigns").all() as Array<{ id: string }>;
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].id, "campaign-1");
+      const applied = after.prepare("SELECT tag FROM __drizzle_migrations").all() as Array<{ tag: string }>;
+      assert.deepEqual(applied.map((row) => row.tag), ["0000_campaign_review"]);
+    } finally {
+      after.close();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("the migration preserves dependent rows and both foreign key chains", () => {
+  const directory = mkdtempSync(join(tmpdir(), "wolds-migration-deps-"));
+  const path = join(directory, "deps.sqlite");
+
+  try {
+    const legacy = new DatabaseSync(path);
+    legacy.exec(
+      "CREATE TABLE __drizzle_migrations (id integer PRIMARY KEY, tag text NOT NULL UNIQUE, applied_at text NOT NULL)",
+    );
+    legacy.exec(readFileSync(resolve(process.cwd(), "drizzle/0000_campaign_review.sql"), "utf8"));
+    legacy
+      .prepare("INSERT INTO __drizzle_migrations (tag, applied_at) VALUES (?, ?)")
+      .run("0000_campaign_review", new Date().toISOString());
+    legacy
+      .prepare(
+        `INSERT INTO campaigns (id, submission_key, brand_id, brief, post_count, start_date,
+          end_date, status, generation_mode, model, created_at, updated_at)
+         VALUES ('c1', ?, 'record', ?, 1, '2026-08-01', '2026-08-02', 'review', 'fixture', 'm', 't', 't')`,
+      )
+      .run(crypto.randomUUID(), "A brief with dependent rows attached.");
+    legacy
+      .prepare(
+        `INSERT INTO generation_attempts (id, request_key, campaign_id, kind, mode, model,
+          input_snapshot, brand_pack_version, status, request_started_at, created_at, updated_at)
+         VALUES ('a1', ?, 'c1', 'campaign', 'fixture', 'm', '{}', 'v1', 'complete', 't', 't', 't')`,
+      )
+      .run(crypto.randomUUID());
+    legacy
+      .prepare(
+        `INSERT INTO draft_posts (id, campaign_id, ordinal, format, brand_id, objective, pillar,
+          proposed_date, visual_template, headline, body, footer, instagram_caption,
+          facebook_caption, hashtags, alt_text, review_status, render_status,
+          latest_generation_attempt_id, created_at, updated_at)
+         VALUES ('p1', 'c1', 1, 'image', 'record', 'education', 'record-keeping', '2026-08-01',
+          'problem', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'draft', 'pending', 'a1', 't', 't')`,
+      )
+      .run();
+    legacy.close();
+
+    const database = createDatabase(path);
+    try {
+      assert.deepEqual(database.client.prepare("PRAGMA foreign_key_check").all(), []);
+      assert.equal(
+        (database.client.prepare("SELECT count(*) AS n FROM draft_posts").get() as { n: number }).n,
+        1,
+      );
+
+      const fks = database.client.prepare("PRAGMA foreign_key_list(draft_posts)").all() as Array<{
+        table: string;
+      }>;
+      assert.deepEqual(
+        fks.map((row) => row.table).sort(),
+        ["campaigns", "generation_attempts"],
+      );
+
+      // UNIQUE (campaign_id, ordinal) must have survived the recreation.
+      assert.throws(() =>
+        database.client
+          .prepare(
+            `INSERT INTO draft_posts (id, campaign_id, ordinal, format, brand_id, objective, pillar,
+              proposed_date, visual_template, headline, body, footer, instagram_caption,
+              facebook_caption, hashtags, alt_text, review_status, render_status,
+              latest_generation_attempt_id, created_at, updated_at)
+             VALUES ('p2', 'c1', 1, 'image', 'record', 'education', 'record-keeping', '2026-08-01',
+              'problem', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'draft', 'pending', 'a1', 't', 't')`,
+          )
+          .run(),
       );
     } finally {
       database.close();

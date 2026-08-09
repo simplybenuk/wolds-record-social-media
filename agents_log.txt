@@ -220,3 +220,21 @@ Manual follow-up:
   - Record's application-rendered image opacity moves 18 -> 17 (pack is now
     authoritative). Legacy CLI output is unaffected. Confirm against PR #2 output testing.
   - No external service was contacted. No Buffer, Cloudinary or Meta call was made.
+
+2026-08-09 (local) — multi-brand campaign packs: agent review fixes
+Files changed: src/db/index.ts (migration DDL now runs in a transaction with rollback;
+  foreign_keys restored in a finally; foreign_key_check read back and enforced);
+  drizzle/0001_widen_brand_id.sql (inert pragma check removed, comment corrected);
+  src/features/campaigns/schemas.ts (unreachable pillar refinement removed);
+  src/lib/brand/packs.ts (Object.hasOwn guards on pack and alias lookups);
+  src/lib/rendering/campaign-renderer.ts (resolves the pack from post.brandId per R4;
+  asset allow-list spans all enabled packs);
+  instagram.html (style resolved before the reel early-return);
+  scripts/check-posts.mjs (accurate message for a non-string brand);
+  test/brand-packs.test.ts (interrupted-migration, dependent-rows and prototype cases);
+  plans/tasks/multi-brand-campaign-packs.md (review record).
+Verification: npm run check pass; npm test 50 pass / 0 fail; npm run posts:check
+  0 ready / 0 blocked / 20 sent (unchanged, posts.json diff empty);
+  npm run lint:compositions 3 ok; npm run build pass; Record render md5 regression
+  PASS — still byte-identical.
+Manual follow-up: unchanged from the previous entry. No external service was contacted.

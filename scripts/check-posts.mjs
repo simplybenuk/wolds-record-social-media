@@ -107,7 +107,10 @@ const KNOWN_BRAND_VALUES = new Set([
 
 function brandWarnings(post){
   if(post.brand === undefined || post.brand === null) return [];
-  if(typeof post.brand !== "string" || !post.brand.trim()){
+  if(typeof post.brand !== "string"){
+    return [`brand is ${typeof post.brand}, expected a string`];
+  }
+  if(!post.brand.trim()){
     return ["brand is set but empty"];
   }
   if(!KNOWN_BRAND_VALUES.has(post.brand.trim())){

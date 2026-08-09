@@ -31,6 +31,7 @@ clinical or accreditation claims is added here.
 | T9 | `brand_id` constraint migration on both tables | Applies to empty and populated databases, no row loss, FKs intact | `npm test` migration cases | Done |
 | T10 | Full validation and regression | §14 automated gates pass | See evidence | Done |
 | T11 | Documentation and handoff | Task plan, log entry, PR | This file | Done |
+| R1 | Independent agent review and fixes | All confirmed findings resolved or answered | `npm test` 50 pass | Done |
 
 ## Deferred, with reasons
 
@@ -73,7 +74,7 @@ made. `npm install` was run first; all results below are post-install.
 | Gate | Result |
 | --- | --- |
 | `npm run check` (syntax + `tsc --noEmit`) | pass |
-| `npm test` | 47 pass, 0 fail |
+| `npm test` | 50 pass, 0 fail |
 | `npm run posts:check` | 0 ready / 0 blocked / 20 sent — unchanged |
 | `git diff -- posts.json` | empty |
 | `npm run lint:compositions` | 3 ok, 0 failed |
@@ -92,3 +93,27 @@ mobile flow it exercises is PR #2's. It is required before the UI task (T7) land
 
 None of the spec's §16 stop conditions were hit. Record output was preserved
 byte-identically, and no core concept required a change.
+
+## Agent review (2026-08-09)
+
+An independent agent review of commit `d8ac9cb` confirmed the md5 regression, the
+palette reset behaviour, and the completeness of the `0001` table recreation by
+re-running them. It raised seven findings; all are resolved in the follow-up commit.
+
+| # | Finding | Resolution |
+| --- | --- | --- |
+| 1 | **High.** The FK-disabling migration path ran without a transaction, so an interruption could drop `campaigns` and leave an orphan `campaigns_new`, permanently bricking startup. The justifying comment was wrong: SQLite's procedure is *pragma outside, DDL inside* a transaction. | `src/db/index.ts` now hoists only whole-statement pragmas, wraps the DDL in `BEGIN IMMEDIATE`/`ROLLBACK`, and restores `foreign_keys = ON` in a `finally`. New test asserts an interrupted swap leaves the original rows and journal intact. |
+| 2 | **Medium.** `PRAGMA foreign_key_check` in the SQL was inert — it reports violations as rows, never as an error, and `exec` discards rows — so the migration could commit a corrupted reference graph. | Removed from the SQL; the runner reads the pragma back and rolls back on any violation. |
+| 3 | The new pillar loop in `superRefine` was unreachable behind the field's `z.enum`. | Removed; replaced with a comment recording where the constraint actually lives, so the deferred R5 work does not mistake it for a safety net. |
+| 4 | `brandPackById("toString")` returned a function as a `BrandPack` via the prototype chain. | `Object.hasOwn` guards on both the pack map and the alias table, with a test. |
+| 5 | R4's per-post brand resolution was not wired: `campaign-renderer.ts` always used the Record pack, so a `massage` draft post would silently render as Record. | Now resolves via `resolveBrand(post.brandId)`, and the renderer's asset allow-list covers every enabled pack. |
+| 6 | The reel early-return in `applyPost` skipped the style block, leaving the previous post's palette and handle active. | Style resolution moved above the reel branch. |
+| 7 | `check-posts.mjs` misreported a non-string `brand` as "empty". | Message now names the actual type. |
+
+Finding 5 was a genuine scope gap rather than a deferred item — R4 belonged in this
+slice and the task table above did not account for it. It is now delivered.
+
+**Coverage added** for the two defects no test caught (1 and 2), plus the reviewer's
+note that the migration case exercised a lone `campaigns` row: there is now a test
+inserting `campaigns` + `generation_attempts` + `draft_posts` and asserting both
+foreign key chains, row survival and `UNIQUE (campaign_id, ordinal)` after the swap.

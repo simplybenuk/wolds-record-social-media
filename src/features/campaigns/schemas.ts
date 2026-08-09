@@ -149,15 +149,9 @@ export const brandPackSchema = z
     addDuplicateIssues(pack.contentPillars, ["contentPillars"], context);
     addDuplicateIssues(pack.staticTemplates, ["staticTemplates"], context);
 
-    for (const [index, pillar] of pack.contentPillars.entries()) {
-      if (!CONTENT_PILLARS.includes(pillar as (typeof CONTENT_PILLARS)[number])) {
-        context.addIssue({
-          code: "custom",
-          path: ["contentPillars", index],
-          message: `Unknown content pillar "${pillar}".`,
-        });
-      }
-    }
+    /* A pack declares its own pillar allow-list. Membership of the global union
+       is enforced by the z.enum(CONTENT_PILLARS) on the field itself; there is
+       deliberately no assertion here that a pack allows *every* pillar. */
 
     if (
       VISUAL_TEMPLATES.some(

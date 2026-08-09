@@ -2,9 +2,11 @@
 -- three brand pack IDs. SQLite cannot alter a CHECK in place, so each table is
 -- recreated and its rows copied.
 --
--- Foreign keys are disabled for the swap and re-enabled afterwards, which is
--- the documented SQLite procedure; the integrity check at the end proves no
--- reference was orphaned. Column lists are explicit so a copy cannot silently
+-- Foreign keys are disabled for the swap and re-enabled by the migration
+-- runner, which also reads back PRAGMA foreign_key_check and rolls back if the
+-- swap orphaned a reference. That check cannot live here: foreign_key_check
+-- reports violations as result rows, never as an error, so a bare statement in
+-- this file would pass silently. Column lists are explicit so a copy cannot
 -- depend on column order.
 
 PRAGMA foreign_keys = OFF;
@@ -75,7 +77,5 @@ DROP TABLE draft_posts;
 ALTER TABLE draft_posts_new RENAME TO draft_posts;
 --> statement-breakpoint
 CREATE INDEX draft_posts_campaign_idx ON draft_posts (campaign_id);
---> statement-breakpoint
-PRAGMA foreign_key_check;
 --> statement-breakpoint
 PRAGMA foreign_keys = ON;

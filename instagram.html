@@ -1093,17 +1093,10 @@ async function applyPost(post){
 
   recordIssues = issue ? [issue] : [];
 
-  if(format === "reel"){
-    applyReelPost(post);
-    setFormat("reel");
-    loadingPostAssets = Promise.resolve();
-    return;
-  }
-
-  setFormat("image");
-
   // Brand visual style rides on the post record. Absent palette/fonts fall back
   // to Record, which is what keeps every existing posts.json record identical.
+  // Resolved before the reel branch so a reel never leaves the previously
+  // loaded post's palette, handle or swatches active.
   const { palette, issues: paletteIssues } = resolvePalette(post.palette);
   const { fonts, issues: fontIssues } = resolveFonts(post.fonts);
 
@@ -1115,6 +1108,15 @@ async function applyPost(post){
 
   recordIssues = [...recordIssues, ...paletteIssues, ...fontIssues];
   paintSwatches();
+
+  if(format === "reel"){
+    applyReelPost(post);
+    setFormat("reel");
+    loadingPostAssets = Promise.resolve();
+    return;
+  }
+
+  setFormat("image");
 
   if(post.aspectRatio) $("aspectRatio").value = post.aspectRatio;
   if(post.template) $("template").value = post.template;
