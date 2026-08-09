@@ -41,6 +41,41 @@ clinical or accreditation claims is added here.
 | T5 Per-brand schema generation | Depends on packs existing to generate from. |
 | T6 Brand-scoped validation | Same. The boundary it validates against is delivered; the second/third allow-list is not. |
 | T7 UI brand selection | `enabledBrandPacks()` derives the selector from packs on disk, so the form correctly offers one brand today and three when the packs land. No UI change is needed until then. |
+| R3 Reel palette (both surfaces) | Deferred by the spec itself (§5, §141) to the Reel slice. Now stated in the code at both sites — `instagram.html:715` and `video/brand/tokens.css`. See the carried-forward note below for what the deferral actually costs. |
+
+### Carried forward to the Reel slice
+
+The Reel deferral is wider than "tokens are not parameterised", and this is the
+part no artifact recorded before now:
+
+1. **The editor's Reel preview renders Record colours for any brand.** `activePalette`
+   reaches the canvas `draw()` path and `paintSwatches()` only. The Reel preview DOM is
+   styled by the page-level `--forest`/`--sand`/`--navy`/`--sage` variables at
+   `instagram.html:9-13`, which nothing writes to. A Massage reel would therefore preview
+   in Record colours **beside a Massage swatch strip** — the inconsistency is visible
+   within one screen, so it will read as a bug rather than as a known limit.
+2. **Review finding 6 did not close this.** Moving style resolution above the reel
+   early-return fixed a state leak *between posts* (a reel no longer inherits the
+   previously loaded post's palette and handle). It did not make the reel preview
+   brand-aware, because the resolved palette never reaches that markup.
+3. **`tokens.css` is linked statically** by all three compositions, so the render path
+   needs either per-brand token files or an injected `:root` override — a design
+   decision, not a substitution.
+4. **`tokens.css` is not only colour.** It also carries motion, spacing, the type scale
+   and the Instagram safe-area insets. The Reel slice must decide which of those are
+   brand identity and which are house style; R2's semantic-role vocabulary covers the
+   palette alone.
+
+None of this is reachable today: `wolds-record` is the only pack on disk and the only
+selectable brand. It becomes reachable the moment T4's packs land, so the Reel slice
+should precede or accompany any non-Record reel content.
+
+**Scope context, not a deferral of this change:** the studio app has no reel concept at
+all — no match for `reel` anywhere under `src/`. Reels exist only in the legacy path
+(`instagram.html` → `video/compositions/` → `scripts/render-video.mjs`), so campaigns are
+static-image-only end to end. The Reel slice is therefore a feature slice, not a
+parameterisation task, and `VISION.md` ("image or Reel content") is the authority on
+whether campaign-generated reels are in scope at all.
 
 Also outstanding, human-supplied: `assets/logos/wolds-canine-massage-logo.png` and
 `assets/logos/wolds-canine-academy-logo.png`.

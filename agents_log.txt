@@ -249,3 +249,16 @@ Reason: spec sec.141 / task 2 required the Reel deferral stated at both sites.
 Verification: npm run lint:compositions 3 ok, 0 failed. No behavioural change — CSS
   comment only; no declaration, selector or token value touched.
 Manual follow-up: none. No external service was contacted.
+
+2026-08-09 (local) — multi-brand campaign packs: record the Reel deferral cost
+Files changed: plans/tasks/multi-brand-campaign-packs.md (deferred table gains an
+  R3 Reel palette row; new "Carried forward to the Reel slice" section records four
+  facts no artifact held before — the editor Reel preview renders Record colours for
+  any brand because activePalette reaches only draw() and paintSwatches() and not the
+  Reel preview DOM; review finding 6 fixed the between-posts state leak, not this;
+  tokens.css is linked statically by all three compositions; tokens.css also carries
+  motion, spacing, type scale and safe-area insets, so brand-vs-house-style needs
+  deciding. Plus scope context that src/ has no reel concept at all).
+Verification: documentation only, no code touched, no validation gate applicable.
+Manual follow-up: not reachable while wolds-record is the only pack on disk; becomes
+  reachable when the T4 packs land. No external service was contacted.
