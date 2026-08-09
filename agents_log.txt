@@ -191,3 +191,32 @@
 - Two scope decisions changed on that evidence, both confirmed by the human: fonts move INTO scope (the pack slot exists and is ignored), and the palette keys are renamed to semantic roles.
 - Verified on the merged tree: `npm run posts:check` 0 ready / 0 blocked / 20 sent, and `git diff main -- posts.json` empty. `npm run check` could not complete here because this working tree has no node_modules for the newly merged devDependencies (`tsc: not found`); no code changed in the merge, so the pilot branch's own clean-worktree run is the standing evidence.
 - Manual follow-up: (1) PR #2 human output testing is still the open gate and may change these structures again; (2) confirm whether the Record opacity shift from 18 to 17 is acceptable, or correct the pack to 18; (3) human approval of this spec; (4) Massage/Academy logos, confirmed facts, prohibited claims, palettes and fonts still needed before live generation.
+
+2026-08-09 (local) — multi-brand campaign packs: brand boundary slice
+Files changed: instagram.html (palette/font/handle parameterisation, live swatches);
+  src/lib/brand/packs.ts (new: one loader, alias table, renderer brand input);
+  src/lib/brand/record.ts (thin facade over the loader);
+  src/features/campaigns/types.ts (BRAND_IDS widened, LEGACY_BRAND_ALIASES, pillar union);
+  src/features/campaigns/schemas.ts (semantic palette roles; every-pillar assertion removed);
+  brands/record/brand.json (palette keys renamed, version 2026-08-09.1);
+  src/lib/rendering/legacy-post-adapter.ts + campaign-renderer.ts (pack-derived identity);
+  src/db/index.ts (migration runner now walks the drizzle journal);
+  src/db/schema.ts + drizzle/0001_widen_brand_id.sql (brand_id CHECK widened, both tables);
+  scripts/check-posts.mjs (brand validated as a warning);
+  test/brand-packs.test.ts (new), test/rendering-contract.test.ts (fixture updated);
+  plans/tasks/multi-brand-campaign-packs.md (new).
+Verification: npm install was required first — the pilot's next/react/typescript/
+  drizzle-orm/openai were missing and npm run check failed at "tsc: not found" before
+  any edit. After install: npm run check pass; npm test 47 pass / 0 fail;
+  npm run posts:check 0 ready / 0 blocked / 20 sent (unchanged, posts.json diff empty);
+  npm run lint:compositions 3 ok; npm run build pass. Record render md5 regression
+  PASS — byte-identical across the problem, feature and hook templates.
+Manual follow-up:
+  - Human pack review (spec §9.2) before any Massage or Academy pack is drafted or sent
+    to the API. Not waived. woldscanine.com claims "Accredited, science-led training"
+    with no awarding body named — the Academy pack must prohibit that claim.
+  - Human-supplied logo files for Massage and Academy.
+  - npm run verify:mobile before the brand-selection UI task lands.
+  - Record's application-rendered image opacity moves 18 -> 17 (pack is now
+    authoritative). Legacy CLI output is unaffected. Confirm against PR #2 output testing.
+  - No external service was contacted. No Buffer, Cloudinary or Meta call was made.

@@ -96,6 +96,26 @@ function postIssues(post, format){
   return [...new Set(issues)];
 }
 
+/* Known brand pack IDs and the legacy posts.json `brand` values that alias to
+   them. Kept in step with src/features/campaigns/types.ts LEGACY_BRAND_ALIASES.
+   An unrecognised value is a warning, never a blocking error: `brand` is a
+   label the pipeline does not act on, and every live record predates packs. */
+const KNOWN_BRAND_VALUES = new Set([
+  "record", "massage", "academy",
+  "wolds-record", "wolds-canine-massage", "wolds-canine-therapy-academy"
+]);
+
+function brandWarnings(post){
+  if(post.brand === undefined || post.brand === null) return [];
+  if(typeof post.brand !== "string" || !post.brand.trim()){
+    return ["brand is set but empty"];
+  }
+  if(!KNOWN_BRAND_VALUES.has(post.brand.trim())){
+    return [`unrecognised brand "${post.brand.trim()}"`];
+  }
+  return [];
+}
+
 function statusLabel(post, issues){
   if(post.bufferPostId || post.status === "sent_to_buffer"){
     return "sent";
@@ -127,6 +147,7 @@ function main(){
   for(const post of posts){
     const format = formatOf(post);
     const issues = postIssues(post, format);
+    const warnings = brandWarnings(post);
     const label = statusLabel(post, issues);
     counts[label] += 1;
 
@@ -139,6 +160,10 @@ function main(){
 
     if(post.bufferPostId){
       parts.push(`bufferPostId=${post.bufferPostId}`);
+    }
+
+    if(warnings.length){
+      parts.push(`warn: ${warnings.join("; ")}`);
     }
 
     // Cross-posting a Reel to the grid is not visible anywhere in the record

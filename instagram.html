@@ -619,13 +619,7 @@ Not everyone.</textarea>
 
       <div class="field">
         <label>Brand colours</label>
-        <div class="swatches">
-          <div class="swatch" style="background:#2F5933" title="Forest"></div>
-          <div class="swatch" style="background:#F4F1EC" title="Sand"></div>
-          <div class="swatch" style="background:#142836" title="Navy"></div>
-          <div class="swatch" style="background:#D6A859" title="Amber"></div>
-          <div class="swatch" style="background:#666E6B" title="Sage"></div>
-        </div>
+        <div class="swatches" id="brandSwatches"></div>
       </div>
       </div>
 
@@ -712,13 +706,120 @@ Not everyone.</textarea>
   </main>
 
 <script>
-const C = {
-  forest:"#2F5933",
-  sand:"#F4F1EC",
-  navy:"#142836",
-  amber:"#D6A859",
-  sage:"#666E6B"
-};
+/* Brand visual style -------------------------------------------------------
+   Palette roles are semantic, matching video/brand/tokens.css vocabulary.
+   The Record values below are the fallback: records with no `palette` (every
+   existing posts.json record) render exactly as they always have.
+
+   NOTE: video/brand/tokens.css and the Reel preview path deliberately keep
+   their own Record-only colours. Reel token parameterisation is deferred with
+   the Reel slice; see plans/specs/multi-brand-campaign-packs.md R3. */
+const PALETTE_ROLES = ["paper", "ink", "inkSoft", "accent", "deep"];
+
+const RECORD_PALETTE = Object.freeze({
+  paper:"#F4F1EC",   // page ground        (was: sand)
+  ink:"#142836",     // primary text       (was: navy)
+  inkSoft:"#666E6B", // secondary text     (was: sage)
+  accent:"#D6A859",  // highlight, rules   (was: amber)
+  deep:"#2F5933"     // strong fills       (was: forest)
+});
+
+const RECORD_FONTS = Object.freeze({
+  headlineFont:"Montserrat",
+  bodyFont:"Open Sans"
+});
+
+const RECORD_HANDLE = "@woldsrecord";
+
+const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+
+/* Active style is replaced per post by applyPost. */
+let activePalette = { ...RECORD_PALETTE };
+let activeFonts = { ...RECORD_FONTS };
+let activeHandle = RECORD_HANDLE;
+
+/* Resolve a supplied palette role by role. An unknown role, a missing role or
+   a non-hex value falls back to the Record default and records an issue rather
+   than drawing `undefined`. */
+function resolvePalette(supplied){
+  const resolved = { ...RECORD_PALETTE };
+  const issues = [];
+
+  if(supplied === undefined || supplied === null) return { palette: resolved, issues };
+
+  if(typeof supplied !== "object" || Array.isArray(supplied)){
+    return { palette: resolved, issues: ["palette must be an object; using Record colours."] };
+  }
+
+  for(const key of Object.keys(supplied)){
+    if(!PALETTE_ROLES.includes(key)){
+      issues.push(`palette role "${key}" is not recognised and was ignored.`);
+    }
+  }
+
+  for(const role of PALETTE_ROLES){
+    const value = supplied[role];
+
+    if(value === undefined){
+      issues.push(`palette role "${role}" is missing; using the Record colour.`);
+      continue;
+    }
+
+    if(typeof value !== "string" || !HEX_COLOUR.test(value)){
+      issues.push(`palette role "${role}" is not a #rrggbb colour; using the Record colour.`);
+      continue;
+    }
+
+    resolved[role] = value;
+  }
+
+  return { palette: resolved, issues };
+}
+
+function resolveFonts(supplied){
+  const resolved = { ...RECORD_FONTS };
+  const issues = [];
+
+  if(supplied === undefined || supplied === null) return { fonts: resolved, issues };
+
+  if(typeof supplied !== "object" || Array.isArray(supplied)){
+    return { fonts: resolved, issues: ["fonts must be an object; using Record fonts."] };
+  }
+
+  for(const key of ["headlineFont", "bodyFont"]){
+    const value = supplied[key];
+
+    if(value === undefined) continue;
+
+    if(typeof value !== "string" || !value.trim()){
+      issues.push(`${key} is not a font family name; using the Record font.`);
+      continue;
+    }
+
+    resolved[key] = value.trim();
+  }
+
+  return { fonts: resolved, issues };
+}
+
+/* Font families are pack-supplied; weights, sizes and the size-by-aspect-ratio
+   logic are unchanged. The Arial fallback chain is preserved. */
+function headlineFamily(){ return `${activeFonts.headlineFont}, Arial, sans-serif`; }
+function bodyFamily(){ return `${activeFonts.bodyFont}, Arial, sans-serif`; }
+
+function paintSwatches(){
+  const container = document.getElementById("brandSwatches");
+
+  if(!container) return;
+
+  container.replaceChildren(...PALETTE_ROLES.map(role => {
+    const swatch = document.createElement("div");
+    swatch.className = "swatch";
+    swatch.style.background = activePalette[role];
+    swatch.title = `${role} ${activePalette[role]}`;
+    return swatch;
+  }));
+}
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -1001,6 +1102,20 @@ async function applyPost(post){
 
   setFormat("image");
 
+  // Brand visual style rides on the post record. Absent palette/fonts fall back
+  // to Record, which is what keeps every existing posts.json record identical.
+  const { palette, issues: paletteIssues } = resolvePalette(post.palette);
+  const { fonts, issues: fontIssues } = resolveFonts(post.fonts);
+
+  activePalette = palette;
+  activeFonts = fonts;
+  activeHandle = typeof post.handle === "string" && post.handle.trim()
+    ? post.handle.trim()
+    : RECORD_HANDLE;
+
+  recordIssues = [...recordIssues, ...paletteIssues, ...fontIssues];
+  paintSwatches();
+
   if(post.aspectRatio) $("aspectRatio").value = post.aspectRatio;
   if(post.template) $("template").value = post.template;
   if(post.kicker) $("kicker").value = post.kicker;
@@ -1242,7 +1357,7 @@ function draw(){
   const lineHeight = headlineSize * 1.08;
 
   ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = C.sand;
+  ctx.fillStyle = activePalette.paper;
   ctx.fillRect(0, 0, W, H);
 
   // Optional image
@@ -1259,12 +1374,12 @@ function draw(){
   // Subtle brand shapes
   ctx.save();
   ctx.globalAlpha = 0.10;
-  ctx.fillStyle = C.forest;
+  ctx.fillStyle = activePalette.deep;
   ctx.beginPath();
   ctx.arc(W - 110, scaleToHeight(110, H), 220 * heightScale, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = C.amber;
+  ctx.fillStyle = activePalette.accent;
   ctx.beginPath();
   ctx.arc(W - 90, H - scaleToHeight(90, H), 170 * heightScale, 0, Math.PI * 2);
   ctx.fill();
@@ -1278,22 +1393,22 @@ function draw(){
     const logoRatio = logoImg.width / logoImg.height;
     ctx.drawImage(logoImg, margin, topY, logoH * logoRatio, logoH);
   } else {
-    ctx.font = `700 ${ratio === "landscape" ? 24 : 30}px Montserrat, Arial, sans-serif`;
-    ctx.fillStyle = C.forest;
+    ctx.font = `700 ${ratio === "landscape" ? 24 : 30}px ${headlineFamily()}`;
+    ctx.fillStyle = activePalette.deep;
     ctx.fillText($("kicker").value, margin, topY + 38);
   }
 
   // Kicker if logo exists
   if(logoImg){
-    ctx.font = `700 ${ratio === "landscape" ? 18 : 24}px Open Sans, Arial, sans-serif`;
-    ctx.fillStyle = C.sage;
+    ctx.font = `700 ${ratio === "landscape" ? 18 : 24}px ${bodyFamily()}`;
+    ctx.fillStyle = activePalette.inkSoft;
     ctx.fillText($("kicker").value, margin, topY + logoH + 28);
   }
 
   // Headline
   const headline = $("headline").value.split("\n");
   const emphasis = $("emphasis").value.trim();
-  const headlineFont = `800 ${headlineSize}px Montserrat, Arial, sans-serif`;
+  const headlineFont = `800 ${headlineSize}px ${headlineFamily()}`;
 
   let y;
 
@@ -1309,7 +1424,7 @@ function draw(){
     const wrapped = wrapLineByWords(rawLine, maxTextWidth, headlineFont);
 
     for(const line of wrapped){
-      drawHighlightedLine(line, margin, y, headlineFont, C.navy, emphasis, C.forest);
+      drawHighlightedLine(line, margin, y, headlineFont, activePalette.ink, emphasis, activePalette.deep);
       y += lineHeight;
     }
   }
@@ -1317,9 +1432,9 @@ function draw(){
   // Body
   y += ratio === "landscape" ? 24 : 54;
 
-  const bodyFont = `400 ${bodySize}px Open Sans, Arial, sans-serif`;
+  const bodyFont = `400 ${bodySize}px ${bodyFamily()}`;
   ctx.font = bodyFont;
-  ctx.fillStyle = C.navy;
+  ctx.fillStyle = activePalette.ink;
 
   const bodyLines = [];
   $("body").value.split("\n").forEach(p => {
@@ -1335,7 +1450,7 @@ function draw(){
   // Divider
   const dividerY = ratio === "landscape" ? H - 112 : H - scaleToHeight(220, H);
 
-  ctx.strokeStyle = C.forest;
+  ctx.strokeStyle = activePalette.deep;
   ctx.lineWidth = ratio === "landscape" ? 4 : 5;
   ctx.beginPath();
   ctx.moveTo(margin, dividerY);
@@ -1343,9 +1458,9 @@ function draw(){
   ctx.stroke();
 
   // Footer
-  const footerFont = `700 ${footerSize}px Open Sans, Arial, sans-serif`;
+  const footerFont = `700 ${footerSize}px ${bodyFamily()}`;
   ctx.font = footerFont;
-  ctx.fillStyle = C.forest;
+  ctx.fillStyle = activePalette.deep;
 
   const footerLines = wrapLineByWords($("footer").value, ratio === "landscape" ? W * 0.58 : maxTextWidth * 0.88, footerFont);
 
@@ -1358,9 +1473,9 @@ function draw(){
   }
 
   // Handle
-  ctx.font = `600 ${ratio === "landscape" ? 17 : 22}px Open Sans, Arial, sans-serif`;
-  ctx.fillStyle = C.sage;
-  ctx.fillText("@woldsrecord", margin, H - 44);
+  ctx.font = `600 ${ratio === "landscape" ? 17 : 22}px ${bodyFamily()}`;
+  ctx.fillStyle = activePalette.inkSoft;
+  ctx.fillText(activeHandle, margin, H - 44);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1950,6 +2065,7 @@ $("copyCommand").addEventListener("click", async () => {
   }
 });
 
+paintSwatches();
 draw();
 setFormat("image", { rerender: false });
 updateReelFieldVisibility($("reelTemplate").value);

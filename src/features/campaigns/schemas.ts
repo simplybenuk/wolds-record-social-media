@@ -127,11 +127,11 @@ export const brandPackSchema = z
       .object({
         palette: z
           .object({
-            forest: z.string().regex(HEX_COLOUR_PATTERN),
-            sand: z.string().regex(HEX_COLOUR_PATTERN),
-            navy: z.string().regex(HEX_COLOUR_PATTERN),
-            amber: z.string().regex(HEX_COLOUR_PATTERN),
-            sage: z.string().regex(HEX_COLOUR_PATTERN),
+            paper: z.string().regex(HEX_COLOUR_PATTERN),
+            ink: z.string().regex(HEX_COLOUR_PATTERN),
+            inkSoft: z.string().regex(HEX_COLOUR_PATTERN),
+            accent: z.string().regex(HEX_COLOUR_PATTERN),
+            deep: z.string().regex(HEX_COLOUR_PATTERN),
           })
           .strict(),
         headlineFont: nonBlankTextSchema,
@@ -149,14 +149,14 @@ export const brandPackSchema = z
     addDuplicateIssues(pack.contentPillars, ["contentPillars"], context);
     addDuplicateIssues(pack.staticTemplates, ["staticTemplates"], context);
 
-    if (
-      CONTENT_PILLARS.some((pillar) => !pack.contentPillars.includes(pillar))
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["contentPillars"],
-        message: "Brand pack must allow every campaign content pillar.",
-      });
+    for (const [index, pillar] of pack.contentPillars.entries()) {
+      if (!CONTENT_PILLARS.includes(pillar as (typeof CONTENT_PILLARS)[number])) {
+        context.addIssue({
+          code: "custom",
+          path: ["contentPillars", index],
+          message: `Unknown content pillar "${pillar}".`,
+        });
+      }
     }
 
     if (

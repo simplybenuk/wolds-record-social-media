@@ -8,7 +8,8 @@ import {
   setRenderReady,
   setRenderStarted,
 } from "@/features/campaigns/repository";
-import { recordBrandPack, recordPhotoAssetMap } from "@/lib/brand/record";
+import { recordBrandPack } from "@/lib/brand/record";
+import { legacyRendererBrandFor } from "@/lib/brand/packs";
 import { adaptDraftPostToLegacyPost } from "./legacy-post-adapter";
 import { StaticImageRenderError, StaticImageRenderer } from "./static-image-renderer";
 
@@ -57,11 +58,7 @@ export async function renderPostPreview(
         altText: post.altText,
         photoAssetId: post.photoAssetId,
       },
-      {
-        brandId: recordBrandPack.id,
-        logoPath: recordBrandPack.logo.path,
-        photoAssets: recordPhotoAssetMap(),
-      },
+      legacyRendererBrandFor(recordBrandPack),
     );
     const result = await renderer.render({
       post: legacy,
