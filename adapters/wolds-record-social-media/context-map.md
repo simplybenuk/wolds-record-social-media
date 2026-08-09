@@ -4,13 +4,13 @@ Paths are relative to the repository root. Entries marked **Placeholder** have n
 
 | Area | Authoritative path | Read when |
 | --- | --- | --- |
-| Vision and goals | `README.md` | Ideation and prioritisation |
+| Vision and goals | `VISION.md`, `automation-plan.md` | Ideation and prioritisation |
 | Product requirements | `automation-plan.md` | Spec and refinement |
 | Architecture | `automation-plan.md`, `scripts/` | Cross-cutting or architectural work |
 | ADRs | **Placeholder — none** | Existing decisions conflict or a new decision is needed |
-| Schema and migrations | `posts.example.json` (post record shape), `scripts/check-posts.mjs` (validation rules) | Data or query changes |
+| Schema and migrations | `src/db/schema.ts`, `drizzle/` (campaign app); `posts.example.json` and `scripts/check-posts.mjs` (legacy post records) | Data or query changes |
 | Domain and permissions | `.env.example` (external service surface); no auth/roles model | Business rules or access changes |
-| Existing features | `README.md`, `scripts/` | Avoiding duplicate or regressive work |
+| Existing features | `README.md`, `src/`, `scripts/`, `brands/` | Avoiding duplicate or regressive work |
 | Planning and PRD | `automation-plan.md`, `plans/tasks/` | Development |
 | Active temporary change artifacts | `plans/discovery/`, `plans/specs/`, `plans/tasks/`, `plans/reviews/`, `plans/output-testing/` | Development, review, and archival |
 | Shared multi-change planning | `README.md`, `automation-plan.md` (both track status) | Development and archival reference updates |
