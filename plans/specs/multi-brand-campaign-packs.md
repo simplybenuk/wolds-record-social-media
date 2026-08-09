@@ -6,26 +6,27 @@
 - **Work type:** Configuration and boundary change; extends an existing application slice with per-brand copy and visual identity
 - **Prepared:** 2026-08-09
 
-## 0. Development precondition
+## 0. Baseline and re-verification record
 
-**This change must not enter development until `wolds-record-campaign-review-slice` has been delivered and human-accepted.**
+`wolds-record-campaign-review-slice` has been **delivered** on `feature/wolds-record-campaign-review-slice` (PR #2, awaiting human output testing) and merged into this change's branch. This specification was originally drafted against that slice's *specification*; it has since been re-verified against the shipped code on 2026-08-09 and corrected below.
 
-That slice is specified but not built. This specification is written against `plans/specs/wolds-record-campaign-review-slice.md` — its brand-pack shape (R3), generated contract (R5), draft-post model (R8), and renderer boundary (R9) — not against working code. Every reference to those structures is provisional.
+**Remaining precondition:** PR #2 is still open and its human output-testing gate has not been passed. Development on this change should not start until that slice is human-accepted, since output testing may still change the structures below.
 
-**Additionally: that pilot specification is not currently present in this repository.** It existed as an uncommitted working file when this spec was written and has since been removed; it was never committed, so it is not recoverable from history. Until it is restored or rewritten, the R-number references below cannot be checked against anything. Restoring or re-creating the pilot specification is a prerequisite to the re-verification step immediately below, not merely to development.
+### Findings from re-verification
 
-On approval, before task planning begins, re-verify against the delivered implementation:
+Five assumptions in the original draft were wrong. Each is now corrected in the requirements:
 
-- the actual `brands/record/` file shape and loading mechanism;
-- whether `pillar` shipped as a fixed union or was already parameterised;
-- where the legacy-post adapter landed and what it owns;
-- whether the render service passes a whole post record to `renderPostForExport` or a narrowed shape.
+1. **The pack already has a `visualStyle` object** — carrying `palette`, `headlineFont`, `bodyFont`, `imageOpacity`, `safeMode`, and `aspectRatio` (`brands/record/brand.json`). It is validated by `brandPackSchema` (`src/features/campaigns/schemas.ts:126-138`) and **consumed by nothing**. This change is therefore mostly *wiring an existing slot*, not adding one.
+2. **The palette ships with literal colour names** (`forest`, `sand`, `navy`, `amber`, `sage`), not semantic roles. R2 renames them.
+3. **Pillars are inverted from what this spec assumed.** `brandPackSchema` currently *requires every pack to allow every global pillar* (`src/features/campaigns/schemas.ts:153-158`), with `CONTENT_PILLARS` a module constant in `src/features/campaigns/types.ts:9`. R5 reverses this.
+4. **The legacy adapter hardcodes brand identity**: `kicker: "Wolds Record"`, `imageOpacity: 18`, `safeMode: "airy"`, `aspectRatio: "square"` (`src/lib/rendering/legacy-post-adapter.ts`). Note that the hardcoded opacity of 18 already **disagrees with the pack's `visualStyle.imageOpacity` of 17** — a live inconsistency this change resolves in the pack's favour.
+5. **The `brand_id` CHECK constraint is in SQL**, on both `campaigns` and `draft_posts` (`drizzle/0000_campaign_review.sql:6,57`; `src/db/schema.ts:36,122`). A migration is required, not optional.
 
-If any diverges materially, return this spec to `NEEDS REFINEMENT` rather than developing against a stale assumption. Approving this specification does not authorise starting it.
+Two scope decisions follow from finding 1 and are recorded in §4: fonts are now **in** scope, and the palette keys are renamed.
 
 ## 1. Objective and scope
 
-Add Wolds Canine Massage and Wolds Canine Therapy Academy as fully usable brands in the campaign studio. Each gets its own copy identity (audience, tone, pillars, calls to action, hashtags, prohibited claims, confirmed facts) **and** its own visual identity (palette and logo), reusing the campaign, generation, persistence, review, and approval loop unchanged.
+Add Wolds Canine Massage and Wolds Canine Therapy Academy as fully usable brands in the campaign studio. Each gets its own copy identity (audience, tone, pillars, calls to action, hashtags, prohibited claims, confirmed facts) **and** its own visual identity (palette, fonts, and logo), reusing the campaign, generation, persistence, review, and approval loop unchanged.
 
 The change is complete when Olivia can select any of three brands, generate a campaign, and receive posts that read and look like that brand — and when adding the third pack required no change to the campaign, attempt, draft-post, review-state, or renderer-service concepts.
 
@@ -50,18 +51,18 @@ No roles, accounts, or permissions exist in this slice. Brand selection is not a
 ## 4. Confirmed decisions
 
 1. Both new brands land together. A single second brand can be accommodated by accident; the third is where a leaky boundary shows.
-2. Per-brand palette and logo are in scope. Colour and logo move out of renderer constants into the brand pack.
-3. Fonts stay shared across all three brands. Per-brand typography is deferred.
+2. Per-brand palette, fonts, and logo are in scope. The pack already declares all three in `visualStyle`; this change makes the renderer honour them.
+3. **Revised 2026-08-09 after re-verification.** Fonts were originally deferred on the assumption the pack had no font slot. It does, validated and ignored. Threading fonts alongside palette is marginal extra work and avoids leaving a validated field permanently inert. The rest of `visualStyle` — `imageOpacity`, `safeMode`, `aspectRatio` — is threaded at the same time, since the adapter's hardcoded values already contradict the pack.
 4. Brand packs are drafted from the live public sites (`woldscaninemassage.co.uk`, `woldscanine.com`), then human-reviewed before any pack is sent to the API.
 5. Content pillars become per-brand configuration. The generated contract must accept a brand-supplied pillar allow-list rather than a fixed union.
 6. One campaign targets exactly one brand. Cross-brand campaigns are out of scope.
-7. Palette is expressed as semantic roles, not literal colour names (decision 1 of the discovery's open list; see R2 for the resolved set).
+7. Palette is expressed as semantic roles, not literal colour names. This renames the delivered pack's keys (see R2), accepted because `forest` and `sand` are meaningless for a brand that is not green-and-cream, and because `video/brand/tokens.css` already uses role names.
 8. Existing `posts.json` records are neither migrated nor re-branded.
 9. Static images only. Reel token parameterisation is deferred with the Reel slice.
 
 ## 5. Non-goals
 
-- Per-brand fonts, type scales, spacing, or image treatments.
+- Per-brand type scales, spacing, or image treatments. Font *family* is in scope (R2/R3); the size, weight, and aspect-ratio scaling logic in `draw()` is not.
 - Reel generation for any brand; parameterising `video/brand/tokens.css`.
 - Template redesign, new templates, or any fourth brand.
 - A brand administration UI, or any runtime editing of packs.
@@ -84,7 +85,7 @@ No roles, accounts, or permissions exist in this slice. Brand selection is not a
 ### 6.2 Review
 
 1. The campaign page shows the brand name and identity.
-2. Rendered previews use the brand's palette and logo.
+2. Rendered previews use the brand's palette, fonts, and logo.
 3. Edit, regenerate, approve, and reject behave exactly as the pilot defines. Regeneration reuses the campaign's brand; the brand cannot be changed after creation.
 4. A post cannot be edited into another brand's pillar or asset; validation rejects it with the same conflict handling as any other invalid edit.
 
@@ -101,22 +102,38 @@ No roles, accounts, or permissions exist in this slice. Brand selection is not a
 
 ### R2. Brand-owned visual identity
 
-Each pack declares:
+The pack's existing `visualStyle` object is the single source of a brand's visual identity, and every field in it must be honoured by the renderer.
 
-- **Palette**, as semantic roles: `paper` (page ground), `ink` (primary text), `inkSoft` (secondary text), `accent` (highlight, rules, emphasis), `deep` (strong fills). Values are hex strings, validated on load.
-- **Logo asset ID**, resolving to a path under `assets/logos/`.
-- **Photo asset allow-list**, by ID.
+**Palette keys are renamed to semantic roles**, replacing the delivered literal names:
 
-The Record pack's palette must reproduce the current values exactly: `paper` `#F4F1EC`, `ink` `#142836`, `inkSoft` `#666E6B`, `accent` `#D6A859`, `deep` `#2F5933`. These are the current `C` constant at `instagram.html:716-720` mapped onto the role names already used by `video/brand/tokens.css:12-17`, so the two surfaces stop disagreeing about vocabulary.
+| Delivered key | New role | Record value | Meaning |
+| --- | --- | --- | --- |
+| `sand` | `paper` | `#F4F1EC` | page ground |
+| `navy` | `ink` | `#142836` | primary text |
+| `sage` | `inkSoft` | `#666E6B` | secondary text |
+| `amber` | `accent` | `#D6A859` | highlight, rules, emphasis |
+| `forest` | `deep` | `#2F5933` | strong fills, emphasis text |
 
-Massage and Academy palettes come from the human-reviewed packs (§9.1). Each must be checked for text contrast before approval (R8).
+The Record values are unchanged — this is a rename, not a recolour, and §14 requires byte-identical Record output to prove it. The role names match `video/brand/tokens.css:12-17`, so the two surfaces stop disagreeing about vocabulary. `brandPackSchema` and the `BrandPack` type update with the pack; the pack's `version` field increments.
 
-### R3. Renderer palette parameterisation
+Also pack-owned and now consumed: `headlineFont`, `bodyFont`, `imageOpacity`, `safeMode`, `aspectRatio`, the logo asset, and the photo asset allow-list.
 
-The static renderer accepts a palette rather than owning one.
+**The pack's `imageOpacity` is authoritative.** The delivered pack says 17 and the adapter hardcodes 18; this change resolves that in the pack's favour, which means Record's *application-rendered* output shifts by one opacity point. That is a deliberate, visible consequence — see the R3 note on what "unchanged" means for each render path.
+
+Massage and Academy visual styles come from the human-reviewed packs (§9.1). Each palette must pass the contrast check in R8.
+
+### R3. Renderer visual parameterisation
+
+The static renderer accepts a visual style rather than owning one.
 
 - Replace the module-level `const C` in `instagram.html` with a resolved active palette that `draw()` reads. All eleven current usages (`instagram.html:1245`, `1262`, `1267`, `1282`, `1289`, `1312` ×2, `1322`, `1338`, `1348`, `1362`) resolve through it.
-- `applyPost` sets the active palette from `post.palette` when present.
+- Fonts are resolved the same way. `instagram.html:1296` and `:1320` currently hardcode `Montserrat` and `Open Sans`; both take their family from the active style, keeping the existing `Arial, sans-serif` fallback chain. Font weights, sizes, and the size-by-aspect-ratio logic are unchanged — only the family is pack-supplied.
+- `applyPost` sets the active style from `post.palette` and `post.fonts` when present.
+
+**Two render paths, two different meanings of "unchanged":**
+
+- The **legacy CLI path** (`scripts/render-post.mjs` against `posts.json`) must produce byte-identical output. Existing records carry no palette or font, so they take the Record fallback, and their `imageOpacity` comes from the record itself as it does today. This is the md5 gate in §14.
+- The **application path** changes by one opacity point for Record (18 → the pack's 17), because R2 makes the pack authoritative. This is expected and must be stated in the task plan so it is not mistaken for a regression. If human output testing on PR #2 has already judged Record previews at opacity 18, confirm the shift is acceptable before landing it; if not, correct the pack to 18 rather than special-casing the adapter.
 - **When `post.palette` is absent, the palette falls back to the current Record values.** This is what keeps every existing `posts.json` record rendering identically.
 - `window.renderPostForExport(post)` needs no signature change: palette rides on the post record it already receives.
 - The palette object is validated where it enters the renderer. An unknown role, a missing role, or a non-hex value falls back to the Record default for that role and records an issue rather than drawing `undefined`.
@@ -125,18 +142,20 @@ The static renderer accepts a palette rather than owning one.
 
 ### R4. Brand resolution in the legacy CLI
 
-`scripts/render-post.mjs` and the application render service must resolve palette the same way.
+`scripts/render-post.mjs` and the application render service must resolve visual style the same way.
 
-- Palette is injected by the legacy-post adapter (pilot R9), which already owns fixed legacy fields. It resolves the pack from the record's `brand` field, defaulting to `record` when absent or unrecognised.
+- Style is injected by `src/lib/rendering/legacy-post-adapter.ts`, which already owns the fixed legacy fields. Its hardcoded `kicker: "Wolds Record"`, `imageOpacity: 18`, `safeMode: "airy"`, and `aspectRatio: "square"` all become pack-derived; `kicker` comes from the pack's display name or an explicit kicker field.
+- The adapter resolves the pack from the record's `brand` field, defaulting to `record` when absent or unrecognised.
 - An unrecognised `brand` value renders with the Record palette and reports a warning. It is not a hard failure: existing records use the free-text value `wolds-record`, which must keep working.
 - The `wolds-record` legacy value maps to the `record` pack. Pack IDs and legacy `brand` values are related by an explicit alias table, not by string coincidence.
 - The CLI's arguments, output paths, exit codes, and stdout contract are unchanged.
 
 ### R5. Per-brand pillars in the generated contract
 
-The pilot's R5 fixes six Record pillars in a union. That union becomes brand-supplied.
+The shipped code fixes six Record pillars as the module constant `CONTENT_PILLARS` (`src/features/campaigns/types.ts:9`) and — critically — `brandPackSchema` currently asserts the **opposite** of what this change needs: `src/features/campaigns/schemas.ts:153-158` rejects any pack that does not allow *every* global pillar. That assertion must be removed and inverted.
 
-- Each pack declares its own pillar allow-list. Record keeps its existing six values unchanged.
+- Each pack declares its own pillar allow-list, and packs may legitimately share none. Record keeps its existing six values unchanged.
+- `CONTENT_PILLARS` becomes the union of all packs' pillars for typing and storage, not a per-pack requirement. `draft_posts.pillar` must accept any pack's value.
 - The structured-output schema is built per request from the selected pack, so `pillar` is a strict enum of that brand's values only. Structured Outputs requires strict schemas; the schema is generated, not hand-maintained per brand.
 - Application-side validation re-checks the returned pillar against the pack, as the pilot already requires for templates and assets.
 - Massage and Academy pillar sets come from the reviewed packs. They may overlap in subject (both touch canine therapy education) but are independent lists; no shared base set is introduced.
@@ -219,7 +238,9 @@ The shared Zod schema becomes a function of the pack: pillar and template enums 
 
 ### 8.4 Data model
 
-No schema change is expected. `campaigns.brand_id` and `draft_posts.brand_id` already exist per the pilot. The pilot's check constraint restricting `brand_id` to `record` is widened to the three pack IDs — a migration that alters a constraint and adds no column. If the pilot implemented that constraint in application code rather than in SQL, no migration is needed and the task plan should say so.
+No column changes. `campaigns.brand_id` and `draft_posts.brand_id` already exist. The `CHECK (brand_id = 'record')` constraint is confirmed present in SQL on **both** tables (`drizzle/0000_campaign_review.sql:6,57`, mirrored at `src/db/schema.ts:36,122`), so a migration **is** required to widen it to the three pack IDs.
+
+SQLite cannot alter a CHECK constraint in place; the migration recreates each table and copies rows, or drops the constraint in favour of application-level validation. The task plan chooses, but must preserve existing campaign data and foreign keys either way, and §14 requires the migration to apply cleanly to both an empty database and one holding a Record campaign.
 
 ## 9. Brand-pack sourcing and review
 
@@ -264,15 +285,15 @@ On completion, update `README.md` and `automation-plan.md`, and correct the adap
 
 A readiness outline, not an approved execution plan. Task states belong in `plans/tasks/multi-brand-campaign-packs.md` after human approval.
 
-1. **Re-verify against delivered pilot code** (§0). Confirm pack shape, contract, adapter, and constraint location. Report divergence before proceeding.
-2. **Palette parameterisation with Record unchanged.** Replace `const C`, thread the active palette, add the absent-palette fallback, handle the swatch markup, and comment the deferred Reel-token duplication at both sites. Gate on visual regression evidence for an existing record before any other task starts.
-3. **Pack schema and loader.** Extend the pack schema with palette, logo, pillar allow-list, and asset allow-list; validate on load with named-field errors; add the pack-ID/legacy-alias table.
+1. **Confirm the §0 baseline still holds** after PR #2's human output testing. Re-check the five findings; if output testing changed any of them, refine before proceeding.
+2. **Palette and font parameterisation with Record unchanged.** Replace `const C`, thread the active palette and font families, add the absent-style fallback, handle the swatch markup, and comment the deferred Reel-token duplication at both sites. Gate on the md5 regression for the legacy CLI path before any other task starts.
+3. **Pack schema rename and loader.** Rename the palette keys to semantic roles, update `brandPackSchema` and `BrandPack`, increment the pack version, remove the every-pillar assertion at `schemas.ts:153-158`, and add the pack-ID/legacy-alias table.
 4. **Draft the two packs** from the live sites per §9.1, with sources recorded. Produce the review artefact; do not send any pack to the API yet.
 5. **Per-brand schema generation.** Make pillar, template, and asset enums pack-derived; regenerate strict JSON Schema per request; re-check after parsing.
 6. **Brand-scoped validation.** Asset allow-listing, pillar rejection, prohibited-claim rules, and edit-path validation.
 7. **UI brand selection.** Three brands, required selection, brand shown on the campaign page, no colour-only status, palette-accurate previews.
 8. **`check-posts.mjs` brand validation** as a warning, with unchanged `posts:check` output evidence.
-9. **Constraint migration** if required by task 1's findings.
+9. **`brand_id` constraint migration** on both tables, preserving existing data and foreign keys.
 10. **Full validation and regression** per §14.
 11. **Documentation and handoff.** `README.md`, `automation-plan.md`, adapter context-map correction, and preparation for independent agent review.
 
@@ -315,8 +336,9 @@ No new runtime dependencies. This is configuration, schema, and render-input wor
 - `npm run posts:check` reports **0 ready / 0 blocked / 20 sent**, identical to today, with `git diff -- posts.json` empty.
 - `npm run lint:compositions` passes (3 ok), proving the Reel path is untouched.
 - **Record render regression:** an existing record renders to a PNG whose md5 matches the pre-change output. This is the single most important automated gate and must pass before any brand-specific work merges.
-- Pack loading: all three packs load; a pack missing a required field fails with that field named; an invalid hex value is rejected.
-- Palette: absent palette falls back to Record; partial palette falls back per role and records an issue; all eleven `draw()` sites resolve through the active palette.
+- Pack loading: all three packs load under the renamed palette schema; a pack missing a required field fails with that field named; an invalid hex value is rejected; a pack declaring only a subset of global pillars now loads (proving the `schemas.ts:153-158` assertion is gone).
+- Style: absent palette or fonts fall back to Record; a partial palette falls back per role and records an issue; all eleven `draw()` colour sites and both font sites resolve through the active style.
+- Migration: the widened `brand_id` constraint applies to an empty database and to one already holding a Record campaign, with foreign keys on and no row loss.
 - Contrast: `ink` on `paper` and `inkSoft` on `paper` meet WCAG AA for each of the three packs.
 - Schema generation: a Massage request's schema contains only Massage pillars; a Record pillar in a Massage response is rejected by post-parse validation.
 - Asset scoping: `wolds-record-dashboard.png` is rejected for Massage and Academy and accepted for Record.
@@ -327,7 +349,7 @@ No new runtime dependencies. This is configuration, schema, and render-input wor
 ### Browser verification
 
 - At 390×844, create a fixture campaign for each of the three brands.
-- Confirm previews render in the correct palette and logo per brand.
+- Confirm previews render in the correct palette, fonts, and logo per brand.
 - Confirm brand selection is required and cannot be changed after creation.
 - Confirm brand identity is legible without relying on colour.
 - Confirm no horizontal overflow and usable keyboard/focus behaviour.
@@ -345,10 +367,11 @@ No new runtime dependencies. This is configuration, schema, and render-input wor
 
 1. `brands/massage/` and `brands/academy/` exist with the same structure as `brands/record/`, load through one schema, and fail loudly on a missing required field.
 2. Each pack owns its palette (semantic roles) and logo; the Record pack reproduces today's five colours exactly.
-3. All eleven palette usages in `draw()` resolve through the active palette; no colour constant remains in the static drawing code.
+3. All eleven palette usages and both font families in `draw()` resolve through the active style; no colour or font constant remains in the static drawing code.
+3a. The adapter's hardcoded `kicker`, `imageOpacity`, `safeMode`, and `aspectRatio` are pack-derived, and the pack/adapter opacity disagreement (17 vs 18) is resolved in the pack's favour.
 4. An existing `posts.json` record renders to a PNG matching its pre-change md5.
 5. A record with no `palette`, and a record with an unrecognised `brand`, both render with Record colours; the CLI contract is unchanged.
-6. `pillar`, `template`, and `photoAssetId` are validated against the selected brand's pack, both in the generated strict schema and after parsing.
+6. `pillar`, `template`, and `photoAssetId` are validated against the selected brand's pack, both in the generated strict schema and after parsing; a pack may declare a pillar subset without failing schema validation.
 7. `wolds-record-dashboard.png` cannot be selected by a Massage or Academy post.
 8. Massage and Academy packs carry human-approved confirmed facts and prohibited claims covering R7, with sources recorded.
 9. All three palettes meet WCAG AA for body text, asserted in tests.
@@ -391,7 +414,6 @@ Stop and return for refinement if:
 - The four static templates (`problem`, `feature`, `hook`, `cta`) work for all three brands; a template proving Record-shaped is a separate redesign change.
 - The generic stock dog photographs are appropriate for all three brands; only the dashboard screenshot is Record-scoped.
 - Massage and Academy each need one logo file; no variant set (dark, mono, stacked) is required for these templates.
-- Fonts shared across brands are acceptable for this slice.
 - Pack-level prompt text (`prompt.md`) is sufficient to convey tone without per-brand code paths.
 - One campaign per brand is the natural unit; no user need for mixed-brand campaigns has been observed.
 - Olivia is available to review both packs before live output testing.
@@ -416,7 +438,8 @@ None blocks human approval. The following may be resolved within these requireme
 
 1. `automation-plan.md` lists a different brand set including SourList; `VISION.md` names Wolds Record, Wolds Canine Massage, and Wolds Canine Therapy Academy. This spec follows `VISION.md`, consistent with the pilot. §11 requires `automation-plan.md` be updated on completion, since this change makes the discrepancy user-visible rather than theoretical.
 2. The adapter context map still names `README.md` as the vision source and does not list `VISION.md`. The pilot spec raised this (§19.3) and deferred it to a documentation update; §11 carries it.
-3. Palette vocabulary conflicts between surfaces: `instagram.html` uses literal colour names (`forest`, `sand`, `navy`, `amber`, `sage`) while `video/brand/tokens.css` already uses semantic roles (`paper`, `ink`, `accent`, `deep`). R2 resolves this in favour of semantic roles for the static path. The Reel path keeps its own tokens for now, and R3 requires that deferral be stated in the code rather than left implicit.
+3. Palette vocabulary conflicts across three surfaces: `instagram.html` and `brands/record/brand.json` use literal colour names (`forest`, `sand`, `navy`, `amber`, `sage`) while `video/brand/tokens.css` already uses semantic roles (`paper`, `ink`, `accent`, `deep`). R2 resolves this in favour of semantic roles for the pack and the static renderer. The Reel path keeps its own tokens for now, and R3 requires that deferral be stated in the code rather than left implicit.
+5. The delivered pack's `visualStyle.imageOpacity` (17) contradicts the hardcoded value in `legacy-post-adapter.ts` (18). R2 resolves this in the pack's favour, which visibly changes Record's application-rendered output by one opacity point. Flagged rather than silently chosen, because PR #2's human output testing may have already judged Record previews at 18.
 4. `instagram.html:543,597` reference `assets/logos/wolds-record.png` as a placeholder; the actual file is `wolds-record-logo-transparent-small.png`. Minor and pre-existing. Fix the placeholder text while touching that markup, or leave it — the task plan should decide, not the implementer mid-task.
 
 No executable source conflicts with this change.
