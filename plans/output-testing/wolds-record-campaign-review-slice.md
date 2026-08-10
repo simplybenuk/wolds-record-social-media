@@ -8,7 +8,8 @@
 ## Preconditions
 
 - Work from the `feature/wolds-record-campaign-review-slice` checkout.
-- Run `npm install`, `npm run build`, and `npm start`.
+- Run `npm ci`, `npm run build`, and `npm start`. Use `npm ci` rather than `npm install` so the pinned lockfile is installed exactly.
+- If another process already holds port 3000, start with `PORT=3101 npm start` and open the matching URL. `npm run verify:mobile` drives an already-running server rather than starting one, so pass `APP_URL=http://127.0.0.1:3101` to match; without a running app it fails with a locator timeout.
 - Confirm any selected photo assets are owned or licensed for Wolds Record use before publication outside this slice.
 - For the bounded live check only, configure server-only `OPENAI_API_KEY`, `OPENAI_MODEL`, and `GENERATION_MODE=live`. Do not record credentials here.
 
