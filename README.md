@@ -1,5 +1,58 @@
 # Wolds Record — Initial Instagram Content Plan
 
+## Wolds Social Studio — campaign review slice
+
+The repository now includes a private, local Next.js application for creating and reviewing Wolds Record static-post campaigns. It persists campaigns, generation attempts, draft copy, rendered previews, and approve/reject decisions in SQLite. This slice does not upload, schedule, or publish anything.
+
+Requirements: Node.js 22+, npm, and the Chromium installed for Playwright. Install dependencies and copy the environment template:
+
+```bash
+npm install
+npx playwright-core install chromium
+cp .env.example .env
+```
+
+Fixture mode is deterministic and makes no OpenAI request:
+
+```text
+GENERATION_MODE=fixture
+```
+
+Start the local app, then open `http://127.0.0.1:3000/campaigns/new`:
+
+```bash
+npm run dev
+```
+
+If something else on the machine already holds port 3000, choose another one and open the matching URL:
+
+```bash
+PORT=3101 npm run dev
+```
+
+For the one bounded human live-generation check, set `GENERATION_MODE=live`, `OPENAI_API_KEY`, and an `OPENAI_MODEL` that supports Responses API Structured Outputs. The server sends the brief and fixed `brands/record/` pack with `store: false`; never prefix these settings with `NEXT_PUBLIC_`.
+
+Local state lives in `data/social-studio.sqlite`; generated previews live under `generated/campaigns/`. Both are git-ignored. A generation or render left in progress for more than ten minutes is marked interrupted on the next campaign load and requires an explicit retry.
+
+Validation:
+
+```bash
+npm run check
+npm test
+npm run posts:check
+npm run build
+# With the app already running:
+npm run verify:mobile
+```
+
+`verify:mobile` drives an existing server rather than starting one; without a running app it fails with a locator timeout. If the app is not on the default port, point it at the right one:
+
+```bash
+APP_URL=http://127.0.0.1:3101 npm run verify:mobile
+```
+
+The legacy JSON, static-image, Reel, Cloudinary, and Buffer workflows below remain available and separate from this local approval surface.
+
 ## Automation v0
 
 This repo now supports a lightweight draft pipeline:

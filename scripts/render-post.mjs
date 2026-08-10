@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, extname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { chromium } from "playwright-core";
-
-const DEFAULT_CHROME_PATH = "/usr/bin/google-chrome";
+import {
+  createStaticImageRenderSession,
+  outputPathFor,
+  readPosts,
+  writePng
+} from "./lib/static-image-renderer.mjs";
 
 function usage(){
   console.log(`Usage:
@@ -37,50 +37,6 @@ function parseArgs(argv){
   return args;
 }
 
-function readPosts(path){
-  const data = JSON.parse(readFileSync(resolve(path), "utf8"));
-  const posts = Array.isArray(data) ? data : data.posts;
-
-  if(!Array.isArray(posts)){
-    throw new Error("Expected a JSON array or an object with a posts array.");
-  }
-
-  return posts;
-}
-
-function outputPathFor(post, explicitOutput){
-  if(explicitOutput) return resolve(explicitOutput);
-  return resolve(post.imagePath || `generated/${post.id}.png`);
-}
-
-function mimeTypeFor(path){
-  const ext = extname(path).toLowerCase();
-
-  if(ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-  if(ext === ".webp") return "image/webp";
-  if(ext === ".svg") return "image/svg+xml";
-  return "image/png";
-}
-
-function localImageToDataUrl(path){
-  if(!path || /^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
-
-  const absolutePath = resolve(path);
-
-  if(!existsSync(absolutePath)) return path;
-
-  const encoded = readFileSync(absolutePath).toString("base64");
-  return `data:${mimeTypeFor(path)};base64,${encoded}`;
-}
-
-function postWithEmbeddedLocalImages(post){
-  return {
-    ...post,
-    logoPath: localImageToDataUrl(post.logoPath),
-    photoPath: localImageToDataUrl(post.photoPath)
-  };
-}
-
 async function main(){
   const args = parseArgs(process.argv.slice(2));
 
@@ -97,42 +53,20 @@ async function main(){
     throw new Error(`No post found with id "${args.postId}".`);
   }
 
-  const browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROME_PATH || DEFAULT_CHROME_PATH,
-    headless: true,
-    args: [
-      "--disable-crash-reporter",
-      "--disable-crashpad",
-      "--disable-gpu",
-      "--no-sandbox"
-    ]
-  });
+  const renderer = await createStaticImageRenderSession();
 
   try{
-    const page = await browser.newPage({
-      viewport: {
-        width: 1400,
-        height: 1600,
-        deviceScaleFactor: 1
-      }
-    });
-
-    await page.goto(pathToFileURL(resolve("instagram.html")).href);
-    await page.waitForFunction(() => typeof window.renderPostForExport === "function");
-
-    const dataUrl = await page.evaluate(inputPost => window.renderPostForExport(inputPost), postWithEmbeddedLocalImages(post));
-    const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+    const png = await renderer.render(post);
     const outputPath = outputPathFor(post, args.output);
 
-    mkdirSync(dirname(outputPath), { recursive: true });
-    writeFileSync(outputPath, Buffer.from(base64, "base64"));
+    writePng(outputPath, png);
 
     console.log(JSON.stringify({
       postId: post.id,
       imagePath: outputPath
     }, null, 2));
   } finally {
-    await browser.close();
+    await renderer.close();
   }
 }
 

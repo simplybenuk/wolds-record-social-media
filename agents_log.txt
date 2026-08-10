@@ -139,3 +139,43 @@
 - Pre-commit secret scan clean: only .env.example placeholders matched; `.env` and `posts.testing.json` are both git-ignored and confirmed excluded.
 - Verified on the committed tree: `npm run check` PASS, `npm test` 55/55, `npm run lint:compositions` 3 ok, `npm run posts:check` 0 ready / 0 blocked / 20 sent, and `git diff 7b8bc9c HEAD -- posts.json` empty (live data untouched by the whole change).
 - Manual follow-up: human intends to publish the two Buffer drafts; their Cloudinary assets must remain while referenced. Background music remains deferred to a separate change.
+
+2026-08-04 Independent review marked wolds-record-campaign-review-slice READY FOR HUMAN TESTING.
+- Added `plans/reviews/wolds-record-campaign-review-slice.md`; verified typecheck, 94 tests, posts check, production build, dependency provenance, data/security boundaries, and a complete 390x844 mobile journey with zero console errors or overflow.
+- Manual follow-up: run one live OpenAI output test, assess brand/content/visual quality, and confirm photo publication rights; this slice must stop at local approval.
+
+2026-08-04 23:17 UTC Developed wolds-record-campaign-review-slice on `feature/wolds-record-campaign-review-slice`.
+- Added the Next/SQLite campaign app, fixed brand/generation/domain contracts, reusable static renderer, mobile review actions, migrations, tests, setup docs, and BWH task/output artifacts; legacy `posts.json` remained unchanged.
+- Verified `npm run check`, 94 tests, posts validation, production build, three Reel composition checks, clean data/security scans, and the complete 390x844 fixture flow; independent review is READY FOR HUMAN TESTING.
+- Manual follow-up: complete the prepared human checklist with one live OpenAI campaign, brand/visual judgment, and photo-rights confirmation; do not publish from this slice.
+
+2026-08-08 22:18 UTC Reconstructed and prepared wolds-record-campaign-review-slice for GitHub publication.
+- Restored the reviewed branch from recorded development patches, regenerated the official dependency lock, and tightened clean-install TypeScript boundaries for the published Drizzle package.
+- Verified typecheck, production build, 60 legacy tests, posts validation, composition linting, lockfile provenance, diff hygiene, and unchanged `posts.json`; Chrome-based tests could not relaunch in the current restricted sandbox (`socket() Operation not permitted`) but retain the prior 94-test and mobile-review evidence.
+- Manual follow-up: run the prepared live OpenAI human-testing checklist using server-only `OPENAI_API_KEY`; do not publish from this slice.
+
+2026-08-08 22:32 UTC Clean-checkout verification of published commit c412072; fixed a test-harness regression.
+- Verified from a fresh `git worktree` plus `npm ci`, because prior evidence came from environments that reconstructed the branch from patches, had no npm registry access, or could not launch Chrome. This was the first full run of this exact commit with a working browser.
+- Defect found and fixed in `scripts/run-ts-tests.mjs`: the esbuild bundle was written to an OS temp directory while `playwright-core` stayed external, so the bundled tests could not resolve it from `/tmp` and every real render failed as `browser_unavailable`. Two integration tests failed on any clean checkout. The bundle is now emitted under `node_modules/.cache/wolds-studio-tests/` and removed after the run.
+- Evidence the fix restored real coverage: TS suite duration went from 0.6s to 12.4s and now writes genuine 1080x1080 PNGs.
+- Verified after the fix: `npm run check` (incl. `tsc --noEmit`) PASS; `npm test` 34/34 TS tests plus legacy suites PASS; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `npm run lint:compositions` 3 ok; `npm run build` PASS with the three campaign routes; `drizzle/0000_campaign_review.sql` applies to an empty SQLite database with foreign keys on; `npm run verify:mobile` full 390x844 journey PASS, 0 console errors, no overflow.
+- `posts.json` has no diff from `main`. No Buffer, Cloudinary, or Meta call occurred, and no live OpenAI request was made.
+- Advisory: `npm audit` reports 3 high-severity advisories, all transitive to Next.js 16.2.10 (next, postcss, sharp) with no fix at that version; registry latest is 16.3.0. Low practical risk while the app is loopback-only, but worth a bump before any wider exposure.
+- Manual follow-up: human output testing remains the open gate. No PR was opened for this branch; that decision is the human's.
+
+2026-08-04 21:15 UTC — Added plans/discovery/wolds-record-campaign-review-slice.md recommending a mobile brief-to-approved-campaign pilot for Wolds Record. Verified against VISION.md, current post schema, renderer, workflow adapter, and planning conventions. Manual follow-up: confirm pilot brand, image-only scope, and live-AI acceptance before specification.
+
+2026-08-04 21:29 UTC — Added plans/specs/wolds-record-campaign-review-slice.md at READY FOR HUMAN APPROVAL. Spec covers the mobile campaign/review loop, durable AI attempts, SQLite model, renderer boundary, security, acceptance criteria, and validation. Verified against discovery, VISION.md, current OpenAI guidance, current renderer/tests, and workflow conventions; `git diff --check` required. Manual follow-up: human spec approval or refinement.
+(The two entries above were written on 2026-08-04 in the main working tree and were lost when this branch was reconstructed from patches on 2026-08-08; restored here out of chronological order rather than rewriting the log.)
+
+2026-08-09 UTC Bumped Next.js 16.2.10 to 16.3.0 to clear the three high-severity advisories.
+- `package.json` and `package-lock.json` only; the pinned-tarball convention is unchanged. `next build` regenerated `next-env.d.ts` with the new `root-params.d.ts` reference. 16.3.0 no longer nests its own `postcss`/`sharp`, which is why the lock shrinks by ~500 lines.
+- `npm audit` goes from 3 high (next, postcss, sharp; no fix at 16.2.10) to 0 vulnerabilities, confirmed after a clean `npm ci` from the regenerated lock.
+- Verified in a fresh worktree on this exact tree: `npm run check` (incl. `tsc --noEmit`) PASS; `npm test` 34/34 TS tests in 12.5s plus 60/60 legacy tests PASS; `npm run posts:check` 0 ready / 0 blocked / 20 sent; `npm run lint:compositions` 3 ok; `npm run build` PASS with the three campaign routes; `npm run verify:mobile` full 390x844 fixture journey PASS, 0 console errors, no overflow (run against `npm start` on port 3101 because another process holds 3000).
+- `posts.json` has no diff from `main`. No Buffer, Cloudinary, or Meta call occurred, and no live OpenAI request was made.
+- Also cleaned stale untracked copies of the discovery and spec documents out of the main working tree; both were superseded by the versions committed on this branch.
+- Manual follow-up: human output testing remains the open gate. Still no PR opened for this branch; that decision is the human's.
+
+2026-08-09 UTC Documented two setup gaps found while verifying the Next 16.3.0 bump.
+- `README.md` and `plans/output-testing/wolds-record-campaign-review-slice.md`: note the `PORT`/`APP_URL` override when port 3000 is already taken, that `verify:mobile` drives an already-running server rather than starting one, and that human testing should install with `npm ci`.
+- Documentation only; no code, dependency, or `posts.json` change, so no revalidation was required.
