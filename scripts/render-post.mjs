@@ -6,6 +6,7 @@ import {
   readPosts,
   writePng
 } from "./lib/static-image-renderer.mjs";
+import { resolveLegacyBrandPost } from "./lib/legacy-brand.mjs";
 
 function usage(){
   console.log(`Usage:
@@ -47,11 +48,14 @@ async function main(){
   }
 
   const posts = readPosts(args.postsPath);
-  const post = posts.find(item => item.id === args.postId);
+  const sourcePost = posts.find(item => item.id === args.postId);
 
-  if(!post){
+  if(!sourcePost){
     throw new Error(`No post found with id "${args.postId}".`);
   }
+
+  const { post, warning } = resolveLegacyBrandPost(sourcePost);
+  if(warning) console.error(warning);
 
   const renderer = await createStaticImageRenderSession();
 

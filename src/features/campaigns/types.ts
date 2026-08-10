@@ -26,6 +26,18 @@ export const CONTENT_PILLARS = [
   "product-update",
   "founder-journey",
   "admin-pain",
+  "dog-wellbeing",
+  "massage-education",
+  "appointment-care",
+  "veterinary-communication",
+  "aftercare",
+  "practitioner-story",
+  "course-education",
+  "learner-support",
+  "canine-wellbeing",
+  "practitioner-development",
+  "owner-learning",
+  "academy-story",
 ] as const;
 export const VISUAL_TEMPLATES = ["problem", "feature", "hook", "cta"] as const;
 export const GENERATION_MODES = ["live", "fixture"] as const;

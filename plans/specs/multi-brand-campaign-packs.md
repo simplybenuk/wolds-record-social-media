@@ -1,6 +1,6 @@
 # Specification: Multi-brand campaign packs
 
-- **Status:** READY FOR HUMAN APPROVAL
+- **Status:** READY FOR HUMAN TESTING
 - **Change slug:** `multi-brand-campaign-packs`
 - **Discovery:** `plans/discovery/multi-brand-campaign-packs.md`
 - **Work type:** Configuration and boundary change; extends an existing application slice with per-brand copy and visual identity
@@ -10,7 +10,8 @@
 
 `wolds-record-campaign-review-slice` has been **delivered** on `feature/wolds-record-campaign-review-slice` (PR #2, awaiting human output testing) and merged into this change's branch. This specification was originally drafted against that slice's *specification*; it has since been re-verified against the shipped code on 2026-08-09 and corrected below.
 
-**Remaining precondition:** PR #2 is still open and its human output-testing gate has not been passed. Development on this change should not start until that slice is human-accepted, since output testing may still change the structures below.
+**Precondition completed:** PR #2 is merged and its human output-testing gate was
+completed before this implementation continued, as confirmed by the project owner.
 
 ### Findings from re-verification
 

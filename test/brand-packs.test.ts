@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -15,7 +16,11 @@ import {
   requireBrandPack,
   resolveBrand,
 } from "../src/lib/brand/packs.ts";
-import { brandPackSchema } from "../src/features/campaigns/schemas.ts";
+import {
+  brandPackSchema,
+  generatedCampaignSchemaForPack,
+} from "../src/features/campaigns/schemas.ts";
+import { FixtureCampaignGenerator } from "../src/lib/generation/fixture-generator.ts";
 import { recordBrandPack } from "../src/lib/brand/record.ts";
 
 test("the Record pack reproduces today's five colours under semantic role names", () => {
@@ -30,10 +35,49 @@ test("the Record pack reproduces today's five colours under semantic role names"
 
 test("every enabled pack loads through one schema", () => {
   const packs = enabledBrandPacks();
-  assert.ok(packs.length >= 1);
+  assert.deepEqual(packs.map((pack) => pack.id), ["record", "massage", "academy"]);
   for (const pack of packs) {
     assert.doesNotThrow(() => brandPackSchema.parse(pack));
   }
+});
+
+test("every enabled pack has readable approved assets and brand-scoped fixture copy", async () => {
+  for (const pack of enabledBrandPacks()) {
+    for (const asset of [pack.logo, ...pack.photoAssets]) {
+      await assert.doesNotReject(readFile(resolve(asset.path)));
+    }
+
+    const result = await new FixtureCampaignGenerator().generateCampaign({
+      brief: "Create practical posts for this brand's audience and keep the copy safe.",
+      postCount: 1,
+      startDate: "2026-09-01",
+      endDate: "2026-09-01",
+      brandPack: pack,
+    });
+    assert.equal(result.campaign.posts[0]?.pillar, pack.contentPillars[0]);
+    assert.match(result.campaign.posts[0]?.altText ?? "", new RegExp(pack.displayName));
+  }
+});
+
+test("structured output uses only the selected brand's pillars", async () => {
+  const massage = requireBrandPack("massage");
+  const fixture = await new FixtureCampaignGenerator().generateCampaign({
+    brief: "Create practical massage education posts for dog owners.",
+    postCount: 1,
+    startDate: "2026-09-01",
+    endDate: "2026-09-01",
+    brandPack: massage,
+  });
+  const schema = generatedCampaignSchemaForPack(massage);
+  assert.equal(schema.safeParse(fixture.campaign).success, true);
+  assert.equal(schema.safeParse({
+    ...fixture.campaign,
+    posts: [{ ...fixture.campaign.posts[0], pillar: "record-keeping" }],
+  }).success, false);
+  assert.equal(schema.safeParse({
+    ...fixture.campaign,
+    posts: [{ ...fixture.campaign.posts[0], photoAssetId: "wolds-record-dashboard" }],
+  }).success, false);
 });
 
 test("a pack missing a required field fails with that field named", () => {

@@ -13,16 +13,17 @@ import {
 } from "@/features/campaigns/repository";
 import type { DraftPostRow } from "@/db/schema";
 import { generatedPostSchema } from "@/features/campaigns/schemas";
-import { recordBrandPack } from "@/lib/brand/record";
+import { requireBrandPack } from "@/lib/brand/packs";
 import { createCampaignRenderer, renderPostPreview } from "@/lib/rendering/campaign-renderer";
 import { GenerationError } from "./errors";
 import { FixtureCampaignGenerator } from "./fixture-generator";
 import { OpenAICampaignGenerator } from "./openai-generator";
 import type { CampaignGenerator } from "./types";
 
-function generatorFor(mode: "fixture" | "live", model: string): CampaignGenerator {
+function generatorFor(mode: "fixture" | "live", model: string, brandId: string): CampaignGenerator {
+  const brandPack = requireBrandPack(brandId);
   if (mode === "fixture") return new FixtureCampaignGenerator();
-  const prompt = readFileSync(resolve(process.cwd(), "brands/record/prompt.md"), "utf8");
+  const prompt = readFileSync(resolve(process.cwd(), "brands", brandPack.id, "prompt.md"), "utf8");
   return new OpenAICampaignGenerator(model, prompt);
 }
 
@@ -57,13 +58,14 @@ export async function runCampaignGeneration(
   const bundle = getCampaignBundle(database, campaignId);
   if (!bundle) throw new Error("campaign_not_found");
   try {
-    const generator = generatorFor(bundle.campaign.generationMode, bundle.campaign.model);
+    const brandPack = requireBrandPack(bundle.campaign.brandId);
+    const generator = generatorFor(bundle.campaign.generationMode, bundle.campaign.model, brandPack.id);
     const result = await generator.generateCampaign({
       brief: bundle.campaign.brief,
       postCount: bundle.campaign.postCount,
       startDate: bundle.campaign.startDate,
       endDate: bundle.campaign.endDate,
-      brandPack: recordBrandPack,
+      brandPack,
     });
     completeCampaignGeneration(database, campaignId, attemptId, result.campaign, result.usage);
   } catch (error) {
@@ -113,12 +115,13 @@ export async function runPostRegeneration(
   const post = bundle?.posts.find((candidate) => candidate.id === postId);
   if (!bundle || !post) throw new Error("post_not_found");
   try {
-    const generator = generatorFor(bundle.campaign.generationMode, bundle.campaign.model);
+    const brandPack = requireBrandPack(bundle.campaign.brandId);
+    const generator = generatorFor(bundle.campaign.generationMode, bundle.campaign.model, brandPack.id);
     const result = await generator.regeneratePost({
       campaignBrief: bundle.campaign.brief,
-      campaignTitle: bundle.campaign.title ?? "Wolds Record campaign",
+      campaignTitle: bundle.campaign.title ?? `${brandPack.displayName} campaign`,
       post: generatedPostFromRow(post),
-      brandPack: recordBrandPack,
+      brandPack,
     });
     completePostRegeneration(database, postId, attemptId, result.campaign.posts[0]!, result.usage);
   } catch (error) {

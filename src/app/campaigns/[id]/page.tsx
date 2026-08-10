@@ -15,9 +15,9 @@ import {
   transitionPostAction,
 } from "@/features/campaigns/actions";
 import { getCampaignBundle } from "@/features/campaigns/repository";
-import { CAMPAIGN_OBJECTIVES, CONTENT_PILLARS, VISUAL_TEMPLATES } from "@/features/campaigns/types";
+import { CAMPAIGN_OBJECTIVES, VISUAL_TEMPLATES } from "@/features/campaigns/types";
 import { createSubmissionKey } from "@/features/campaigns/ids";
-import { recordBrandPack } from "@/lib/brand/record";
+import { requireBrandPack } from "@/lib/brand/packs";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,7 @@ export default async function CampaignPage({
   const { error, post: errorPostId } = await searchParams;
   const bundle = getCampaignBundle(getDatabase(), id);
   if (!bundle) notFound();
+  const brandPack = requireBrandPack(bundle.campaign.brandId);
   const pendingAttempt = bundle.attempts.find((attempt) =>
     attempt.kind === "campaign" && (attempt.status === "pending" || attempt.status === "running"));
 
@@ -47,7 +48,7 @@ export default async function CampaignPage({
       <Link className="back-link" href="/campaigns/new">← New campaign</Link>
       <header className="campaign-header">
         <div>
-          <p className="eyebrow">Wolds Record · {bundle.campaign.generationMode} mode</p>
+          <p className="eyebrow">{brandPack.displayName} · {bundle.campaign.generationMode} mode</p>
           <h1>{bundle.campaign.title ?? "Campaign in progress"}</h1>
           <p>{bundle.campaign.startDate} to {bundle.campaign.endDate} · {bundle.campaign.postCount} posts</p>
         </div>
@@ -181,7 +182,7 @@ export default async function CampaignPage({
                     <input type="hidden" name="version" value={post.version} />
                     <div className="field-grid">
                       <label><span>Objective</span><select name="objective" defaultValue={post.objective}>{CAMPAIGN_OBJECTIVES.map((v) => <option key={v}>{v}</option>)}</select></label>
-                      <label><span>Pillar</span><select name="pillar" defaultValue={post.pillar}>{CONTENT_PILLARS.map((v) => <option key={v}>{v}</option>)}</select></label>
+                      <label><span>Pillar</span><select name="pillar" defaultValue={post.pillar}>{brandPack.contentPillars.map((v) => <option key={v}>{v}</option>)}</select></label>
                       <label><span>Date</span><input type="date" name="proposedDate" defaultValue={post.proposedDate} required /></label>
                       <label><span>Template</span><select name="visualTemplate" defaultValue={post.visualTemplate}>{VISUAL_TEMPLATES.map((v) => <option key={v}>{v}</option>)}</select></label>
                     </div>
@@ -193,7 +194,7 @@ export default async function CampaignPage({
                     <label><span>Facebook caption</span><textarea name="facebookCaption" defaultValue={post.facebookCaption} required /></label>
                     <label><span>Hashtags</span><input name="hashtags" defaultValue={tags.join(" ")} required /></label>
                     <label><span>Alt text</span><textarea name="altText" defaultValue={post.altText} required /></label>
-                    <label><span>Photo</span><select name="photoAssetId" defaultValue={post.photoAssetId ?? ""}><option value="">No photo</option>{recordBrandPack.photoAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}</select></label>
+                    <label><span>Photo</span><select name="photoAssetId" defaultValue={post.photoAssetId ?? ""}><option value="">No photo</option>{brandPack.photoAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}</select></label>
                     <SubmitButton pendingLabel="Saving and rendering…">Save changes</SubmitButton>
                   </form>
                 </details>

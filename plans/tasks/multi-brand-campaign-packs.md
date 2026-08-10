@@ -4,21 +4,24 @@
 - **Spec:** `plans/specs/multi-brand-campaign-packs.md`
 - **Branch:** `feature/multi-brand-campaign-packs`
 - **Started:** 2026-08-09
+- **Status:** READY FOR HUMAN TESTING
+- **Next handoff:** human output testing in `plans/output-testing/multi-brand-campaign-packs.md`
 
 ## Scope decision (2026-08-09)
 
-The spec's §12 outline has eleven tasks. This branch delivers **tasks 1–3, 8 and 9 —
-the brand boundary work** — as one mergeable PR. Tasks 4–7 are deferred, for reasons
-recorded under "Deferred" below, not for convenience.
+The spec's §12 outline is now implemented end to end: tasks 1–11 cover the three
+approved packs, brand-scoped generation and validation, the creation selector, the
+existing migration, full regression, and documentation. Independent agent review is
+the next gate before human output testing.
 
 The delivered slice is the proof of spec acceptance criterion 12: brand identity is now
 data a pack owns, and no campaign, attempt, draft-post, review-state or renderer-service
 concept changed to make that true.
 
-**Approval note.** The human approval gates in the spec (§0 PR #2 output testing, spec
-approval) were explicitly waived for this branch by the repository owner on 2026-08-09.
-The §9.2 **pack review gate was not waived** and is untouched: no brand pack containing
-clinical or accreditation claims is added here.
+**Approval note.** The pilot output-testing and pack-review gates were completed by the
+human operator before this implementation continued. The §9.2 review evidence is in
+`plans/output-testing/multi-brand-campaign-packs.md`; clinical and accreditation claims
+remain explicitly constrained in the packs.
 
 ## Tasks
 
@@ -27,20 +30,22 @@ clinical or accreditation claims is added here.
 | T1 | Re-verify the §0 baseline against delivered code | Five findings re-checked | Read of shipped source | Done |
 | T2 | Palette and font parameterisation, Record unchanged | 11 colour sites + 6 font sites resolve through the active style; no colour constant left in `draw()` | md5 regression, `npm test` | Done |
 | T3 | Pack schema rename, loader, alias table | Semantic roles; every-pillar assertion removed; alias table explicit | `npm test`, typecheck | Done |
+| T4 | Draft the two packs | Reviewed Massage and Academy packs, approved source facts, safety rules, palettes and logos | Pack review artifact and pack tests | Done |
+| T5 | Per-brand schema generation | Structured output pillars, templates and assets are selected from the active pack | Focused schema tests and mocked live contract | Done |
+| T6 | Brand-scoped validation | Domain validation and edit paths reject another brand's pillars/assets | Domain and integration tests | Done |
+| T7 | UI brand selection | Three required options, fixed campaign identity, brand-scoped review controls | Three 390×844 journeys | Done |
 | T8 | `check-posts.mjs` brand validation as a warning | Unrecognised brand warns, never blocks | `npm run posts:check` unchanged | Done |
 | T9 | `brand_id` constraint migration on both tables | Applies to empty and populated databases, no row loss, FKs intact | `npm test` migration cases | Done |
-| T10 | Full validation and regression | §14 automated gates pass | See evidence | Done |
-| T11 | Documentation and handoff | Task plan, log entry, PR | This file | Done |
+| T10 | Full validation and regression | §14 automated gates pass | 2026-08-10 evidence below | Done |
+| T11 | Documentation and handoff | Task plan, pack review, shared docs and log updated | This file and output-testing artifact | Done |
 | R1 | Independent agent review and fixes | All confirmed findings resolved or answered | `npm test` 50 pass | Done |
+| R2 | Independent review of the pack/UI slice | Fresh review against the approved spec before human output testing | `plans/reviews/multi-brand-campaign-packs.md` | Done |
 
 ## Deferred, with reasons
 
 | Spec task | Why deferred |
 | --- | --- |
-| T4 Draft the two packs | Blocked on the §9.2 human pack-review gate. The packs carry clinical (Massage) and accreditation (Academy) prohibited-claim rules; the live sites yielded facts that must be confirmed by Olivia before they can back a pack. Notably `woldscanine.com` advertises "Accredited, science-led training" with **no awarding body named** — exactly the claim R7 requires the Academy pack to prohibit. Self-approving this is the one thing the spec's risk table calls the largest risk in the change. |
-| T5 Per-brand schema generation | Depends on packs existing to generate from. |
-| T6 Brand-scoped validation | Same. The boundary it validates against is delivered; the second/third allow-list is not. |
-| T7 UI brand selection | `enabledBrandPacks()` derives the selector from packs on disk, so the form correctly offers one brand today and three when the packs land. No UI change is needed until then. |
+| T4–T7 | Previously deferred until the human pack-review gate; now delivered after approval. See `plans/output-testing/multi-brand-campaign-packs.md`. |
 | R3 Reel palette (both surfaces) | Deferred by the spec itself (§5, §141) to the Reel slice. Now stated in the code at both sites — `instagram.html:715` and `video/brand/tokens.css`. See the carried-forward note below for what the deferral actually costs. |
 
 ### Carried forward to the Reel slice
@@ -66,9 +71,9 @@ part no artifact recorded before now:
    brand identity and which are house style; R2's semantic-role vocabulary covers the
    palette alone.
 
-None of this is reachable today: `wolds-record` is the only pack on disk and the only
-selectable brand. It becomes reachable the moment T4's packs land, so the Reel slice
-should precede or accompany any non-Record reel content.
+The issue is now reachable for Massage and Academy as soon as a legacy Reel record is
+given one of those brand IDs, so the Reel slice should precede or accompany any
+non-Record Reel content.
 
 **Scope context, not a deferral of this change:** the studio app has no reel concept at
 all — no match for `reel` anywhere under `src/`. Reels exist only in the legacy path
@@ -77,8 +82,7 @@ static-image-only end to end. The Reel slice is therefore a feature slice, not a
 parameterisation task, and `VISION.md` ("image or Reel content") is the authority on
 whether campaign-generated reels are in scope at all.
 
-Also outstanding, human-supplied: `assets/logos/wolds-canine-massage-logo.png` and
-`assets/logos/wolds-canine-academy-logo.png`.
+The approved logo files are now present under `assets/logos/`.
 
 ## Deviations from the spec
 
@@ -99,6 +103,28 @@ Also outstanding, human-supplied: `assets/logos/wolds-canine-massage-logo.png` a
    something PR #2's output testing may have already judged at 18.
 5. **`instagram.html:543,597` placeholder logo path left alone** (§19 conflict 4). It is
    pre-existing, cosmetic, and outside the markup this change touched.
+
+## Validation evidence (2026-08-10, pack and UI slice)
+
+| Gate | Result |
+| --- | --- |
+| `npm run check` | pass |
+| `npm test` | 53 application tests plus 63 legacy tests pass; real PNGs rendered for all three packs |
+| `npm run posts:check` | 0 ready / 0 blocked / 20 sent — unchanged |
+| `npm run lint:compositions` | 3 ok, 0 failed |
+| `npm run build` | pass; campaign routes compile and the client bundle has no server-only imports |
+| WCAG AA contrast | all three packs pass `ink`/`paper` and `inkSoft`/`paper` |
+| `agent-browser` smoke | create form loads with no overlay and all three brands are present |
+| `npm run verify:mobile` | Record, Massage and Academy each pass the 390×844 creation/reload/edit/regenerate/review/recovery journey; 0 console errors and no overflow |
+| `git diff -- posts.json` | empty |
+
+Human live generation and visual/content judgement remain pending in
+`plans/output-testing/multi-brand-campaign-packs.md`; no live OpenAI or publication
+service was contacted during development.
+
+The independent review also re-rendered the three Record CLI regression posts after
+adding legacy pack resolution. Md5s remained `17f2aa4ff9326356eaf434e67a9d6ba3`,
+`13022d6c96b2ecf14ea39fe6872eb1b8`, and `4b01a2637698a4da50a4a81cb7c5e4b2`.
 
 ## Validation evidence (2026-08-09, local, clean install)
 

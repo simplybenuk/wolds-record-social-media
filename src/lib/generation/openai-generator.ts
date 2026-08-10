@@ -1,4 +1,4 @@
-import { generatedCampaignSchema } from "@/features/campaigns/schemas";
+import { generatedCampaignSchemaForPack } from "@/features/campaigns/schemas";
 import { CampaignDomainValidationError, validateGeneratedCampaign } from "@/features/campaigns/domain-validation";
 import type { BrandPack, GeneratedCampaign } from "@/features/campaigns/types";
 import { GenerationError } from "./errors";
@@ -24,7 +24,7 @@ export type ResponsesClient = {
   };
 };
 
-type FormatFactory = (schema: typeof generatedCampaignSchema, name: string) => unknown;
+type FormatFactory = (schema: unknown, name: string) => unknown;
 
 async function defaultClient() {
   const [{ default: OpenAI }, { zodTextFormat }] = await Promise.all([
@@ -143,7 +143,12 @@ export class OpenAICampaignGenerator implements CampaignGenerator {
         model: this.model,
         store: false,
         input: promptInput(this.prompt, brandPack, request),
-        text: { format: formatFactory(generatedCampaignSchema, "wolds_record_campaign") },
+        text: {
+          format: formatFactory(
+            generatedCampaignSchemaForPack(brandPack),
+            "wolds_record_campaign",
+          ),
+        },
       });
       const usage = {
         responseId: response.id,

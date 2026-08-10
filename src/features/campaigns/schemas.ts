@@ -5,6 +5,7 @@ import {
   CAMPAIGN_OBJECTIVES,
   CONTENT_PILLARS,
   VISUAL_TEMPLATES,
+  type BrandPack,
 } from "./types.ts";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,6 +72,27 @@ export const generatedCampaignSchema = z
     posts: z.array(generatedPostSchema).min(1).max(6),
   })
   .strict();
+
+/**
+ * Structured Outputs must receive the selected brand's pillar enum rather than
+ * the union used for persistence and post-parse validation.
+ */
+export function generatedCampaignSchemaForPack(
+  pack: Pick<BrandPack, "contentPillars" | "staticTemplates" | "photoAssets">,
+) {
+  const pillars = pack.contentPillars as [string, ...string[]];
+  const templates = pack.staticTemplates as [string, ...string[]];
+  const assetIds = pack.photoAssets.map((asset) => asset.id) as [string, ...string[]];
+  const postSchema = generatedPostSchema.extend({
+    pillar: z.enum(pillars),
+    visualTemplate: z.enum(templates),
+    photoAssetId: z.enum(assetIds).nullable(),
+  }).strict();
+  return z.object({
+    campaignTitle: nonBlankTextSchema,
+    posts: z.array(postSchema).min(1).max(6),
+  }).strict();
+}
 
 export const editablePostSchema = generatedPostSchema
   .extend({

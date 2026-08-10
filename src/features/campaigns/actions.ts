@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { getDatabase } from "@/db";
 import { campaignInputSchema, generatedPostSchema } from "./schemas";
+import type { BrandPack } from "./types";
 import {
   createPendingCampaign,
   createPostRegenerationAttempt,
@@ -14,7 +15,7 @@ import {
   transitionReviewStatus,
   updateDraftPost,
 } from "./repository";
-import { recordBrandPack } from "@/lib/brand/record";
+import { requireBrandPack } from "@/lib/brand/packs";
 import { CampaignDomainValidationError, validateGeneratedCampaign } from "./domain-validation";
 import { renderPostPreview, createCampaignRenderer } from "@/lib/rendering/campaign-renderer";
 import { runCampaignGeneration, runPostRegeneration } from "@/lib/generation/service";
@@ -57,7 +58,7 @@ const postErrorLocation = (campaignId: string, postId: string, error: unknown) =
 export async function createCampaignAction(formData: FormData) {
   const parsed = campaignInputSchema.safeParse({
     submissionKey: formData.get("submissionKey"),
-    brandId: "record",
+    brandId: formData.get("brandId"),
     brief: formData.get("brief"),
     postCount: formData.get("postCount"),
     startDate: formData.get("startDate"),
@@ -69,13 +70,19 @@ export async function createCampaignAction(formData: FormData) {
   const mode = process.env.GENERATION_MODE === "live" ? "live" : "fixture";
   const model = mode === "live" ? process.env.OPENAI_MODEL?.trim() : "fixture-v1";
   if (!model) redirect("/campaigns/new?error=" + encodeURIComponent("Configure OPENAI_MODEL before using live mode."));
+  let brandPack: BrandPack;
+  try {
+    brandPack = requireBrandPack(parsed.data.brandId);
+  } catch {
+    redirect("/campaigns/new?error=" + encodeURIComponent("That brand is not enabled."));
+  }
 
   const result = createPendingCampaign(getDatabase(), {
     ...parsed.data,
     requestKey: parsed.data.submissionKey + ":initial",
     generationMode: mode,
     model,
-    brandPackVersion: recordBrandPack.version,
+    brandPackVersion: brandPack.version,
   });
   redirect("/campaigns/" + result.campaign.id);
 }
@@ -149,6 +156,7 @@ export async function editPostAction(formData: FormData) {
     const bundle = getCampaignBundle(database, campaignId);
     const before = bundle?.posts.find((post) => post.id === postId);
     if (!before) throw new Error("post_not_found");
+    const brandPack = requireBrandPack(bundle!.campaign.brandId);
     try {
       validateGeneratedCampaign(
         { campaignTitle: bundle!.campaign.title ?? "Campaign", posts: [parsed.data] },
@@ -156,7 +164,7 @@ export async function editPostAction(formData: FormData) {
           requestedPostCount: 1,
           startDate: bundle!.campaign.startDate,
           endDate: bundle!.campaign.endDate,
-          brandPack: recordBrandPack,
+          brandPack,
         },
       );
     } catch (error) {
@@ -201,7 +209,7 @@ export async function regeneratePostAction(formData: FormData) {
       postId,
       Number(formData.get("version")),
       String(formData.get("requestKey") ?? ""),
-      recordBrandPack.version,
+      requireBrandPack(getCampaignBundle(getDatabase(), campaignId)?.campaign.brandId ?? "record").version,
     );
     const outcome = await runPostRegeneration(getDatabase(), campaignId, postId, attempt.id);
     if (outcome.error) throw outcome.error;

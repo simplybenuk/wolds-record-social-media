@@ -1,4 +1,6 @@
 import recordJson from "../../../brands/record/brand.json";
+import massageJson from "../../../brands/massage/brand.json";
+import academyJson from "../../../brands/academy/brand.json";
 import { brandPackSchema } from "@/features/campaigns/schemas";
 import { LEGACY_BRAND_ALIASES, type BrandPack } from "@/features/campaigns/types";
 
@@ -8,6 +10,8 @@ export const RECORD_PACK_ID = "record";
    at load time, with the field named — never a silent default. */
 const PACK_SOURCES: Readonly<Record<string, unknown>> = {
   [RECORD_PACK_ID]: recordJson,
+  massage: massageJson,
+  academy: academyJson,
 };
 
 function loadPack(id: string, source: unknown): BrandPack {
