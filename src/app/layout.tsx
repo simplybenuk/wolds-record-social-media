@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: "Wolds Social Studio",
     template: "%s | Wolds Social Studio",
   },
-  description: "Create and review Wolds Record social campaigns locally.",
+  description: "Create and review Wolds social campaigns locally.",
 };
 
 export const viewport: Viewport = {

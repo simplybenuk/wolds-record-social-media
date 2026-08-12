@@ -8,7 +8,7 @@ import {
   setRenderReady,
   setRenderStarted,
 } from "@/features/campaigns/repository";
-import { recordBrandPack, recordPhotoAssetMap } from "@/lib/brand/record";
+import { enabledBrandPacks, legacyRendererBrandFor, resolveBrand } from "@/lib/brand/packs";
 import { adaptDraftPostToLegacyPost } from "./legacy-post-adapter";
 import { StaticImageRenderError, StaticImageRenderer } from "./static-image-renderer";
 
@@ -29,8 +29,11 @@ export function createCampaignRenderer() {
     repositoryRoot: process.cwd(),
     mediaRoot: resolve(process.cwd(), "generated"),
     allowedAssetPaths: [
-      recordBrandPack.logo.path,
-      ...recordBrandPack.photoAssets.map((asset) => asset.path),
+      // Every enabled pack's assets; the per-post brand decides which are used.
+      ...enabledBrandPacks().flatMap((pack) => [
+        pack.logo.path,
+        ...pack.photoAssets.map((asset) => asset.path),
+      ]),
     ],
     executablePath: process.env.PLAYWRIGHT_CHROME_PATH,
   });
@@ -57,11 +60,7 @@ export async function renderPostPreview(
         altText: post.altText,
         photoAssetId: post.photoAssetId,
       },
-      {
-        brandId: recordBrandPack.id,
-        logoPath: recordBrandPack.logo.path,
-        photoAssets: recordPhotoAssetMap(),
-      },
+      legacyRendererBrandFor(resolveBrand(post.brandId).pack),
     );
     const result = await renderer.render({
       post: legacy,

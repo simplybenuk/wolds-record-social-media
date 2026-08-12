@@ -1,5 +1,12 @@
 /* Wolds Record brand tokens for HyperFrames compositions.
-   Colours are taken from the existing editor palette in instagram.html. */
+   Colours are taken from the existing editor palette in instagram.html.
+
+   NOTE: these colours are deliberately Record-only and are NOT resolved from
+   the active brand pack, unlike the static image renderer's palette. Every
+   composition links this file statically, so a non-Record post still renders
+   Record colours here. Reel token parameterisation is deferred with the Reel
+   slice; see plans/specs/multi-brand-campaign-packs.md R3 and the matching
+   note in instagram.html. */
 
 :root {
   /* Palette */

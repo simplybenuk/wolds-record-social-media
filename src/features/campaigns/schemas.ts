@@ -5,6 +5,7 @@ import {
   CAMPAIGN_OBJECTIVES,
   CONTENT_PILLARS,
   VISUAL_TEMPLATES,
+  type BrandPack,
 } from "./types.ts";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -72,6 +73,27 @@ export const generatedCampaignSchema = z
   })
   .strict();
 
+/**
+ * Structured Outputs must receive the selected brand's pillar enum rather than
+ * the union used for persistence and post-parse validation.
+ */
+export function generatedCampaignSchemaForPack(
+  pack: Pick<BrandPack, "contentPillars" | "staticTemplates" | "photoAssets">,
+) {
+  const pillars = pack.contentPillars as [string, ...string[]];
+  const templates = pack.staticTemplates as [string, ...string[]];
+  const assetIds = pack.photoAssets.map((asset) => asset.id) as [string, ...string[]];
+  const postSchema = generatedPostSchema.extend({
+    pillar: z.enum(pillars),
+    visualTemplate: z.enum(templates),
+    photoAssetId: z.enum(assetIds).nullable(),
+  }).strict();
+  return z.object({
+    campaignTitle: nonBlankTextSchema,
+    posts: z.array(postSchema).min(1).max(6),
+  }).strict();
+}
+
 export const editablePostSchema = generatedPostSchema
   .extend({
     version: z.coerce.number().int().min(0),
@@ -127,11 +149,11 @@ export const brandPackSchema = z
       .object({
         palette: z
           .object({
-            forest: z.string().regex(HEX_COLOUR_PATTERN),
-            sand: z.string().regex(HEX_COLOUR_PATTERN),
-            navy: z.string().regex(HEX_COLOUR_PATTERN),
-            amber: z.string().regex(HEX_COLOUR_PATTERN),
-            sage: z.string().regex(HEX_COLOUR_PATTERN),
+            paper: z.string().regex(HEX_COLOUR_PATTERN),
+            ink: z.string().regex(HEX_COLOUR_PATTERN),
+            inkSoft: z.string().regex(HEX_COLOUR_PATTERN),
+            accent: z.string().regex(HEX_COLOUR_PATTERN),
+            deep: z.string().regex(HEX_COLOUR_PATTERN),
           })
           .strict(),
         headlineFont: nonBlankTextSchema,
@@ -149,15 +171,9 @@ export const brandPackSchema = z
     addDuplicateIssues(pack.contentPillars, ["contentPillars"], context);
     addDuplicateIssues(pack.staticTemplates, ["staticTemplates"], context);
 
-    if (
-      CONTENT_PILLARS.some((pillar) => !pack.contentPillars.includes(pillar))
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["contentPillars"],
-        message: "Brand pack must allow every campaign content pillar.",
-      });
-    }
+    /* A pack declares its own pillar allow-list. Membership of the global union
+       is enforced by the z.enum(CONTENT_PILLARS) on the field itself; there is
+       deliberately no assertion here that a pack allows *every* pillar. */
 
     if (
       VISUAL_TEMPLATES.some(

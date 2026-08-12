@@ -2,7 +2,7 @@
 
 ## Wolds Social Studio — campaign review slice
 
-The repository now includes a private, local Next.js application for creating and reviewing Wolds Record static-post campaigns. It persists campaigns, generation attempts, draft copy, rendered previews, and approve/reject decisions in SQLite. This slice does not upload, schedule, or publish anything.
+The repository now includes a private, local Next.js application for creating and reviewing static-post campaigns for Wolds Record, Wolds Canine Massage Therapy, and Wolds Canine Therapy Academy. It persists campaigns, generation attempts, draft copy, rendered previews, and approve/reject decisions in SQLite. This slice does not upload, schedule, or publish anything.
 
 Requirements: Node.js 22+, npm, and the Chromium installed for Playwright. Install dependencies and copy the environment template:
 
@@ -12,7 +12,7 @@ npx playwright-core install chromium
 cp .env.example .env
 ```
 
-Fixture mode is deterministic and makes no OpenAI request:
+Fixture mode is deterministic and makes no OpenAI request. Choose the brand when creating a campaign; the selected brand is fixed for that campaign and controls its copy rules, pillars, logo, palette and photo allow-list:
 
 ```text
 GENERATION_MODE=fixture
@@ -23,6 +23,18 @@ Start the local app, then open `http://127.0.0.1:3000/campaigns/new`:
 ```bash
 npm run dev
 ```
+
+For temporary access from a phone on the same trusted Wi-Fi network, build and
+start the production server on all network interfaces:
+
+```bash
+npm run build
+PORT=3011 npm run start:lan
+```
+
+Then open `http://<this-computer's-LAN-IP>:3011/campaigns/new` on the phone. Find
+the LAN IP with `hostname -I` (currently `192.168.1.188`). Keep this local-only;
+do not port-forward it to the public internet.
 
 If something else on the machine already holds port 3000, choose another one and open the matching URL:
 

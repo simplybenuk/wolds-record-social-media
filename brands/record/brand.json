@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-04.1",
+  "version": "2026-08-09.1",
   "id": "record",
   "displayName": "Wolds Record",
   "purpose": "Support clear, calm record keeping for canine and related animal-therapy practitioners.",
@@ -156,11 +156,11 @@
   ],
   "visualStyle": {
     "palette": {
-      "forest": "#2F5933",
-      "sand": "#F4F1EC",
-      "navy": "#142836",
-      "amber": "#D6A859",
-      "sage": "#666E6B"
+      "paper": "#F4F1EC",
+      "ink": "#142836",
+      "inkSoft": "#666E6B",
+      "accent": "#D6A859",
+      "deep": "#2F5933"
     },
     "headlineFont": "Montserrat",
     "bodyFont": "Open Sans",

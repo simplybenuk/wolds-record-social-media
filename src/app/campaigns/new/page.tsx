@@ -7,6 +7,7 @@ import { listRecentCampaigns } from "@/features/campaigns/repository";
 import { getDatabase } from "@/db";
 import type { CampaignRow } from "@/db/schema";
 import { SubmitButton } from "@/components/submit-button";
+import { enabledBrandPacks } from "@/lib/brand/packs";
 
 export const metadata: Metadata = {
   title: "New campaign",
@@ -21,10 +22,11 @@ export default async function NewCampaignPage({
 }) {
   const { error } = await searchParams;
   const recent = listRecentCampaigns(getDatabase());
+  const brands = enabledBrandPacks();
   return (
     <div className="stack">
       <section aria-labelledby="new-campaign-title" className="page-card">
-        <p className="eyebrow">Wolds Record</p>
+        <p className="eyebrow">Wolds Social Studio</p>
         <h1 id="new-campaign-title">Create a campaign</h1>
         <p className="lede">
           Turn one clear brief into a small set of static posts, then review every
@@ -39,11 +41,14 @@ export default async function NewCampaignPage({
           <input name="submissionKey" type="hidden" value={createSubmissionKey()} />
           <label>
             <span>Brand</span>
-            <select disabled aria-describedby="brand-note" defaultValue="record">
-              <option value="record">Wolds Record</option>
+            <select aria-describedby="brand-note" defaultValue="" name="brandId" required>
+              <option disabled value="">Choose a brand</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>{brand.displayName}</option>
+              ))}
             </select>
           </label>
-          <small id="brand-note">Wolds Record is the only enabled pilot brand.</small>
+          <small id="brand-note">The selected brand is fixed when the campaign is created.</small>
           <label>
             <span>Campaign brief</span>
             <textarea

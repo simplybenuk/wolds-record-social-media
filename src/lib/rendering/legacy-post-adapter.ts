@@ -15,10 +15,31 @@ export type DraftPostForRendering = {
   photoAssetId: string | null;
 };
 
+export type LegacyPalette = {
+  paper: string;
+  ink: string;
+  inkSoft: string;
+  accent: string;
+  deep: string;
+};
+
+export type LegacyFonts = {
+  headlineFont: string;
+  bodyFont: string;
+};
+
 export type LegacyRendererBrand = {
   brandId: string;
   logoPath: string;
   photoAssets: Readonly<Record<string, string>>;
+  /** Display name used as the on-image kicker. */
+  kicker: string;
+  handle: string;
+  palette: LegacyPalette;
+  fonts: LegacyFonts;
+  imageOpacity: number;
+  safeMode: "airy";
+  aspectRatio: "square";
 };
 
 export type LegacyStaticPost = {
@@ -29,14 +50,17 @@ export type LegacyStaticPost = {
   instagramType: "post";
   aspectRatio: "square";
   template: LegacyVisualTemplate;
-  kicker: "Wolds Record";
+  kicker: string;
+  handle: string;
+  palette: LegacyPalette;
+  fonts: LegacyFonts;
   headline: string;
   emphasis: string;
   body: string;
   footer: string;
   logoPath: string;
   photoPath: string;
-  imageOpacity: 18;
+  imageOpacity: number;
   safeMode: "airy";
   caption: string;
   hashtags: string[];
@@ -96,17 +120,20 @@ export function adaptDraftPostToLegacyPost(
     format: "image",
     service: "instagram",
     instagramType: "post",
-    aspectRatio: "square",
+    aspectRatio: brand.aspectRatio,
     template: draft.visualTemplate,
-    kicker: "Wolds Record",
+    kicker: brand.kicker,
+    handle: brand.handle,
+    palette: brand.palette,
+    fonts: brand.fonts,
     headline: draft.headline,
     emphasis: draft.emphasis ?? "",
     body: draft.body,
     footer: draft.footer,
     logoPath,
     photoPath,
-    imageOpacity: 18,
-    safeMode: "airy",
+    imageOpacity: brand.imageOpacity,
+    safeMode: brand.safeMode,
     caption: draft.instagramCaption,
     hashtags: [...draft.hashtags],
     altText: draft.altText

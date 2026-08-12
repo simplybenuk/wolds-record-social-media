@@ -5,7 +5,7 @@ import type { AppDatabase } from "@/db";
 import { campaigns, draftPosts, generationAttempts } from "@/db/schema";
 import type { CampaignRow, DraftPostRow, GenerationAttemptRow } from "@/db/schema";
 import { newOpaqueId } from "./ids";
-import type { GeneratedCampaign } from "./types";
+import type { BrandId, GeneratedCampaign } from "./types";
 
 export const INTERRUPTED_AFTER_MS = 10 * 60 * 1000;
 
@@ -19,6 +19,7 @@ type NewCampaign = {
   generationMode: "fixture" | "live";
   model: string;
   brandPackVersion: string;
+  brandId?: BrandId;
 };
 
 type Usage = {
@@ -72,7 +73,7 @@ export function createPendingCampaign(database: AppDatabase, input: NewCampaign)
     database.orm.insert(campaigns).values({
       id: campaignId,
       submissionKey: input.submissionKey,
-      brandId: "record",
+      brandId: input.brandId ?? "record",
       title: null,
       brief: input.brief,
       postCount: input.postCount,
@@ -96,6 +97,7 @@ export function createPendingCampaign(database: AppDatabase, input: NewCampaign)
       model: input.model,
       inputSnapshot: JSON.stringify({
         promptHash: createHash("sha256").update(JSON.stringify({
+          brandId: input.brandId ?? "record",
           brief: input.brief,
           postCount: input.postCount,
           startDate: input.startDate,
@@ -162,6 +164,8 @@ export function completeCampaignGeneration(
 ) {
   const timestamp = now();
   inTransaction(database, () => {
+    const campaign = database.orm.select().from(campaigns).where(eq(campaigns.id, campaignId)).get();
+    if (!campaign) throw new Error("campaign_not_found");
     const attempt = database.orm
       .select()
       .from(generationAttempts)
@@ -181,7 +185,7 @@ export function completeCampaignGeneration(
         campaignId,
         ordinal,
         format: "image",
-        brandId: "record",
+        brandId: campaign.brandId,
         ...post,
         hashtags: JSON.stringify(post.hashtags),
         reviewStatus: "draft",

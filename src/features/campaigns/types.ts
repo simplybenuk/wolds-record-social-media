@@ -1,4 +1,15 @@
-export const BRAND_IDS = ["record"] as const;
+/* Storage/typing vocabulary for brand IDs. A brand is only *selectable* when a
+   pack for it exists on disk — see enabledBrandPacks() in src/lib/brand/packs.ts.
+   Widening this list does not by itself enable a brand in the UI. */
+export const BRAND_IDS = ["record", "massage", "academy"] as const;
+
+/* Legacy posts.json `brand` values mapped to pack IDs. Pack IDs and legacy
+   values are related by this explicit table, not by string coincidence. */
+export const LEGACY_BRAND_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  "wolds-record": "record",
+  "wolds-canine-massage": "massage",
+  "wolds-canine-therapy-academy": "academy",
+});
 export const CAMPAIGN_OBJECTIVES = [
   "education",
   "awareness",
@@ -6,6 +17,8 @@ export const CAMPAIGN_OBJECTIVES = [
   "product",
   "engagement",
 ] as const;
+/* The union of every pack's pillars, used for typing and storage. A pack
+   declares its own subset; packs may legitimately share no pillars at all. */
 export const CONTENT_PILLARS = [
   "therapist-workflow",
   "record-keeping",
@@ -13,6 +26,18 @@ export const CONTENT_PILLARS = [
   "product-update",
   "founder-journey",
   "admin-pain",
+  "dog-wellbeing",
+  "massage-education",
+  "appointment-care",
+  "veterinary-communication",
+  "aftercare",
+  "practitioner-story",
+  "course-education",
+  "learner-support",
+  "canine-wellbeing",
+  "practitioner-development",
+  "owner-learning",
+  "academy-story",
 ] as const;
 export const VISUAL_TEMPLATES = ["problem", "feature", "hook", "cta"] as const;
 export const GENERATION_MODES = ["live", "fixture"] as const;
@@ -73,11 +98,11 @@ export type BrandPack = {
   staticTemplates: VisualTemplate[];
   visualStyle: {
     palette: {
-      forest: string;
-      sand: string;
-      navy: string;
-      amber: string;
-      sage: string;
+      paper: string;
+      ink: string;
+      inkSoft: string;
+      accent: string;
+      deep: string;
     };
     headlineFont: string;
     bodyFont: string;

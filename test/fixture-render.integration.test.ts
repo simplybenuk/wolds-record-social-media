@@ -10,6 +10,7 @@ import {
   getCampaignBundle,
 } from "../src/features/campaigns/repository.ts";
 import { recordBrandPack } from "../src/lib/brand/record.ts";
+import { enabledBrandPacks } from "../src/lib/brand/packs.ts";
 import { runCampaignGeneration, runPostRegeneration } from "../src/lib/generation/service.ts";
 
 test("a three-post fixture campaign persists and renders three real square PNGs", { timeout: 120_000 }, async () => {
@@ -45,6 +46,39 @@ test("a three-post fixture campaign persists and renders three real square PNGs"
   } finally {
     database.close();
     rmSync(campaignDirectory, { recursive: true, force: true });
+  }
+});
+
+test("each enabled brand renders a real fixture preview", { timeout: 180_000 }, async () => {
+  for (const brandPack of enabledBrandPacks()) {
+    const database = createDatabase(":memory:");
+    const created = createPendingCampaign(database, {
+      submissionKey: crypto.randomUUID(),
+      requestKey: crypto.randomUUID(),
+      brandId: brandPack.id,
+      brief: "Create one practical, audience-appropriate post for this brand.",
+      postCount: 1,
+      startDate: "2026-09-01",
+      endDate: "2026-09-01",
+      generationMode: "fixture",
+      model: "fixture-v1",
+      brandPackVersion: brandPack.version,
+    });
+    const campaignDirectory = resolve("generated", "campaigns", created.campaign.id);
+    try {
+      const outcome = await runCampaignGeneration(database, created.campaign.id, created.attempt.id);
+      assert.equal(outcome.error, undefined);
+      const post = getCampaignBundle(database, created.campaign.id)!.posts[0]!;
+      assert.equal(post.brandId, brandPack.id);
+      assert.equal(post.renderStatus, "ready", post.safeRenderErrorMessage ?? undefined);
+      const png = readFileSync(resolve("generated", post.imagePath!));
+      assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+      assert.equal(png.readUInt32BE(16), 1080);
+      assert.equal(png.readUInt32BE(20), 1080);
+    } finally {
+      database.close();
+      rmSync(campaignDirectory, { recursive: true, force: true });
+    }
   }
 });
 

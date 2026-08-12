@@ -8,6 +8,7 @@ import {
   adaptDraftPostToLegacyPost,
   LegacyPostAdapterError,
   type DraftPostForRendering,
+  type LegacyRendererBrand,
 } from "../src/lib/rendering/legacy-post-adapter.ts";
 import {
   StaticImageRenderer,
@@ -27,10 +28,23 @@ const draft: DraftPostForRendering = {
   photoAssetId: "dog-one",
 };
 
-const brand = {
+const brand: LegacyRendererBrand = {
   brandId: "record",
   logoPath: "assets/logo.png",
   photoAssets: { "dog-one": "assets/dog.png" },
+  kicker: "Wolds Record",
+  handle: "@woldsrecord",
+  palette: {
+    paper: "#F4F1EC",
+    ink: "#142836",
+    inkSoft: "#666E6B",
+    accent: "#D6A859",
+    deep: "#2F5933",
+  },
+  fonts: { headlineFont: "Montserrat", bodyFont: "Open Sans" },
+  imageOpacity: 17,
+  safeMode: "airy",
+  aspectRatio: "square",
 };
 
 test("the draft adapter owns legacy defaults without publication fields", () => {
@@ -45,13 +59,22 @@ test("the draft adapter owns legacy defaults without publication fields", () => 
     aspectRatio: "square",
     template: "problem",
     kicker: "Wolds Record",
+    handle: "@woldsrecord",
+    palette: {
+      paper: "#F4F1EC",
+      ink: "#142836",
+      inkSoft: "#666E6B",
+      accent: "#D6A859",
+      deep: "#2F5933",
+    },
+    fonts: { headlineFont: "Montserrat", bodyFont: "Open Sans" },
     headline: "Scattered notes take time",
     emphasis: "Scattered",
     body: "Keep the useful context together.",
     footer: "Follow along as we build Wolds Record",
     logoPath: "assets/logo.png",
     photoPath: "assets/dog.png",
-    imageOpacity: 18,
+    imageOpacity: 17,
     safeMode: "airy",
     caption: "A channel-specific caption.",
     hashtags: ["woldsrecord", "caninetherapy", "caninemassage"],

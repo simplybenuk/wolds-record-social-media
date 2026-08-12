@@ -33,7 +33,7 @@ export const campaigns = sqliteTable(
   },
   (table: any) => [
     uniqueIndex("campaigns_submission_key_unique").on(table.submissionKey),
-    check("campaigns_brand_check", sql`${table.brandId} = 'record'`),
+    check("campaigns_brand_check", sql`${table.brandId} in ('record','massage','academy')`),
     check("campaigns_post_count_check", sql`${table.postCount} between 1 and 6`),
     check("campaigns_status_check", sql`${table.status} in ('pending','review','failed')`),
     check("campaigns_mode_check", sql`${table.generationMode} in ('live','fixture')`),
@@ -119,7 +119,7 @@ export const draftPosts = sqliteTable(
     uniqueIndex("draft_posts_campaign_ordinal_unique").on(table.campaignId, table.ordinal),
     index("draft_posts_campaign_idx").on(table.campaignId),
     check("draft_posts_format_check", sql`${table.format} = 'image'`),
-    check("draft_posts_brand_check", sql`${table.brandId} = 'record'`),
+    check("draft_posts_brand_check", sql`${table.brandId} in ('record','massage','academy')`),
     check("draft_posts_review_check", sql`${table.reviewStatus} in ('draft','approved','rejected')`),
     check(
       "draft_posts_render_check",

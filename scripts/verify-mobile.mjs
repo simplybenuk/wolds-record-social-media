@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { chromium } from "playwright-core";
 
 const baseUrl = process.env.APP_URL || "http://127.0.0.1:3000";
+const brandId = process.env.MOBILE_BRAND_ID || "record";
 const screenshotPath = process.env.MOBILE_SCREENSHOT || "/tmp/wolds-campaign-review-mobile.png";
 const databasePath = process.env.SOCIAL_STUDIO_DB_PATH || "./data/social-studio.sqlite";
 const browser = await chromium.launch({
@@ -34,6 +35,7 @@ try {
   await page.getByLabel("Campaign brief").fill(
     "Create three practical posts about calmer record keeping for busy canine therapists.",
   );
+  await page.getByLabel("Brand").selectOption(brandId);
   await page.getByLabel("Number of posts").fill("3");
   await page.getByLabel("Start date").fill("2026-09-01");
   await page.getByLabel("End date").fill("2026-09-14");
