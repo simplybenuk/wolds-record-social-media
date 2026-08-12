@@ -3,7 +3,12 @@ import { z } from "zod";
 import {
   BRAND_IDS,
   CAMPAIGN_OBJECTIVES,
+  CONTENT_STRUCTURES,
   CONTENT_PILLARS,
+  ENGAGEMENT_INTENTS,
+  FORMAT_PREFERENCES,
+  POST_FORMATS,
+  SLIDE_ROLES,
   VISUAL_TEMPLATES,
   type BrandPack,
 } from "./types.ts";
@@ -32,6 +37,7 @@ export const campaignInputSchema = z
   .object({
     submissionKey: z.string().uuid(),
     brandId: z.enum(BRAND_IDS),
+    formatPreference: z.enum(FORMAT_PREFERENCES),
     brief: z.string().trim().min(20).max(2_000),
     postCount: z.coerce.number().int().min(1).max(6),
     startDate: isoDateSchema,
@@ -48,23 +54,51 @@ export const campaignInputSchema = z
     }
   });
 
-export const generatedPostSchema = z
+export const generatedSlideSchema = z
   .object({
+    ordinal: z.number().int().min(0).max(6),
+    role: z.enum(SLIDE_ROLES),
+    visualTemplate: z.enum(VISUAL_TEMPLATES),
+    headline: z.string().trim().min(1).max(90),
+    body: z.string().trim().min(1).max(280).nullable(),
+    emphasis: z.string().trim().min(1).max(50).nullable(),
+    footer: z.string().trim().min(1).max(100).nullable(),
+    photoAssetId: nonBlankTextSchema.nullable(),
+    altText: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
+function validatePostStructure(post: { format: "image" | "carousel"; slides: Array<{ ordinal: number; role: string }> }, context: z.RefinementCtx) {
+    if (post.format === "image" && post.slides.length !== 1) {
+      context.addIssue({ code: "custom", path: ["slides"], message: "An image must contain exactly one slide." });
+    }
+    if (post.format === "carousel" && (post.slides.length < 3 || post.slides.length > 7)) {
+      context.addIssue({ code: "custom", path: ["slides"], message: "A carousel must contain three to seven slides." });
+    }
+    post.slides.forEach((slide, index) => {
+      const expected = post.format === "image" ? "standalone" : index === 0 ? "cover" : index === post.slides.length - 1 ? "action" : "content";
+      if (slide.ordinal !== index) context.addIssue({ code: "custom", path: ["slides", index, "ordinal"], message: "Slide ordinals must be contiguous from zero." });
+      if (slide.role !== expected) context.addIssue({ code: "custom", path: ["slides", index, "role"], message: `Expected ${expected} slide role.` });
+    });
+}
+
+const generatedPostBaseSchema = z
+  .object({
+    format: z.enum(POST_FORMATS),
     objective: z.enum(CAMPAIGN_OBJECTIVES),
     pillar: z.enum(CONTENT_PILLARS),
     proposedDate: isoDateSchema,
-    visualTemplate: z.enum(VISUAL_TEMPLATES),
-    headline: nonBlankTextSchema,
-    emphasis: nonBlankTextSchema.nullable(),
-    body: nonBlankTextSchema,
-    footer: nonBlankTextSchema,
+    engagementIntent: z.enum(ENGAGEMENT_INTENTS),
+    contentStructure: z.enum(CONTENT_STRUCTURES),
+    engagementCta: z.string().trim().min(1).max(140),
     instagramCaption: nonBlankTextSchema,
     facebookCaption: nonBlankTextSchema,
     hashtags: z.array(normalizedHashtagSchema).min(3).max(8),
-    altText: nonBlankTextSchema,
-    photoAssetId: nonBlankTextSchema.nullable(),
+    slides: z.array(generatedSlideSchema).min(1).max(7),
   })
   .strict();
+
+export const generatedPostSchema = generatedPostBaseSchema.superRefine(validatePostStructure);
 
 export const generatedCampaignSchema = z
   .object({
@@ -83,11 +117,15 @@ export function generatedCampaignSchemaForPack(
   const pillars = pack.contentPillars as [string, ...string[]];
   const templates = pack.staticTemplates as [string, ...string[]];
   const assetIds = pack.photoAssets.map((asset) => asset.id) as [string, ...string[]];
-  const postSchema = generatedPostSchema.extend({
-    pillar: z.enum(pillars),
+  const slideSchema = generatedSlideSchema.extend({
     visualTemplate: z.enum(templates),
     photoAssetId: z.enum(assetIds).nullable(),
   }).strict();
+  const postSchema = z.object({
+    ...generatedPostBaseSchema.shape,
+    pillar: z.enum(pillars),
+    slides: z.array(slideSchema).min(1).max(7),
+  }).strict().superRefine(validatePostStructure);
   return z.object({
     campaignTitle: nonBlankTextSchema,
     posts: z.array(postSchema).min(1).max(6),
@@ -158,6 +196,13 @@ export const brandPackSchema = z
           .strict(),
         headlineFont: nonBlankTextSchema,
         bodyFont: nonBlankTextSchema,
+        aspectRatio: z.literal("portrait"),
+        canvas: z.object({ width: z.literal(1080), height: z.literal(1350) }).strict(),
+        photoTreatments: z.array(z.enum(["full-bleed", "split", "framed", "none"])).min(3),
+      })
+      .strict(),
+    legacyVisualStyle: z
+      .object({
         imageOpacity: z.number().int().min(0).max(100),
         safeMode: z.literal("airy"),
         aspectRatio: z.literal("square"),
@@ -170,6 +215,7 @@ export const brandPackSchema = z
     addDuplicateIssues(pack.defaultHashtags, ["defaultHashtags"], context);
     addDuplicateIssues(pack.contentPillars, ["contentPillars"], context);
     addDuplicateIssues(pack.staticTemplates, ["staticTemplates"], context);
+    addDuplicateIssues(pack.visualStyle.photoTreatments, ["visualStyle", "photoTreatments"], context);
 
     /* A pack declares its own pillar allow-list. Membership of the global union
        is enforced by the z.enum(CONTENT_PILLARS) on the field itself; there is

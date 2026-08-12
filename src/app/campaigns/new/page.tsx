@@ -49,6 +49,13 @@ export default async function NewCampaignPage({
             </select>
           </label>
           <small id="brand-note">The selected brand is fixed when the campaign is created.</small>
+          <fieldset className="format-preference">
+            <legend>Creative format</legend>
+            <label><input defaultChecked name="formatPreference" type="radio" value="auto" /><span><strong>Automatic mix</strong><small>Choose portrait images and carousels to suit the content.</small></span></label>
+            <label><input name="formatPreference" type="radio" value="image" /><span><strong>Portrait images</strong><small>One 4:5 image per post.</small></span></label>
+            <label><input name="formatPreference" type="radio" value="carousel" /><span><strong>Carousels</strong><small>Three to seven ordered 4:5 slides per post.</small></span></label>
+          </fieldset>
+          <small>Reels are not available in the campaign studio yet.</small>
           <label>
             <span>Campaign brief</span>
             <textarea

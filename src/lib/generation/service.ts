@@ -11,7 +11,7 @@ import {
   getCampaignBundle,
   StalePostVersionError,
 } from "@/features/campaigns/repository";
-import type { DraftPostRow } from "@/db/schema";
+import type { DraftPostRow, DraftPostSlideRow } from "@/db/schema";
 import { generatedPostSchema } from "@/features/campaigns/schemas";
 import { requireBrandPack } from "@/lib/brand/packs";
 import { createCampaignRenderer, renderPostPreview } from "@/lib/rendering/campaign-renderer";
@@ -27,21 +27,19 @@ function generatorFor(mode: "fixture" | "live", model: string, brandId: string):
   return new OpenAICampaignGenerator(model, prompt);
 }
 
-function generatedPostFromRow(post: DraftPostRow) {
+function generatedPostFromRow(post: DraftPostRow & { slides: DraftPostSlideRow[] }) {
   return generatedPostSchema.parse({
+    format: post.format,
     objective: post.objective,
     pillar: post.pillar,
     proposedDate: post.proposedDate,
-    visualTemplate: post.visualTemplate,
-    headline: post.headline,
-    emphasis: post.emphasis,
-    body: post.body,
-    footer: post.footer,
+    engagementIntent: post.engagementIntent,
+    contentStructure: post.contentStructure,
+    engagementCta: post.engagementCta,
     instagramCaption: post.instagramCaption,
     facebookCaption: post.facebookCaption,
     hashtags: JSON.parse(post.hashtags) as string[],
-    altText: post.altText,
-    photoAssetId: post.photoAssetId,
+    slides: post.slides.map((slide) => ({ ordinal: slide.ordinal, role: slide.role, visualTemplate: slide.visualTemplate, headline: slide.headline, body: slide.body, emphasis: slide.emphasis, footer: slide.footer, photoAssetId: slide.photoAssetId, altText: slide.altText })),
   });
 }
 
@@ -66,6 +64,7 @@ export async function runCampaignGeneration(
       startDate: bundle.campaign.startDate,
       endDate: bundle.campaign.endDate,
       brandPack,
+      formatPreference: bundle.campaign.formatPreference,
     });
     completeCampaignGeneration(database, campaignId, attemptId, result.campaign, result.usage);
   } catch (error) {

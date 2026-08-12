@@ -20,7 +20,7 @@ Human approval stays in the loop.
 
 ## Current implementation status
 
-The bounded Wolds Social Studio slice now supports Wolds Record, Wolds Canine Massage Therapy, and Wolds Canine Therapy Academy static campaigns: mobile campaign brief entry, 1–6 fixture or live structured generations, SQLite persistence, brand-scoped copy and assets, sequential reuse of the existing canvas renderer, editing, one-post regeneration, and local approve/reject decisions. It deliberately stops before media hosting, Buffer, scheduling, and publication. Reels in the application, deployment, authentication, and the broader dashboard remain future work.
+The Wolds Social Studio now supports Wolds Record, Wolds Canine Massage Therapy, and Wolds Canine Therapy Academy Instagram-first static campaigns: mobile campaign brief entry; immutable automatic/image/carousel preference; 1–6 fixture or live structured generations; engagement-intent, CTA and content-structure validation; one-slide portrait images or 3–7-slide carousels; canonical SQLite-backed ordered slides; structurally decoded and CRC-validated complete-set 1080×1350 rendering; ordered mobile editing and inspection; one-post regeneration; and whole-post approve/reject decisions gated on a current complete preview. Migrated square campaigns remain readable and can move through review again against their validated preserved 1080×1080 artifact, without re-rendering. The application still stops before media hosting, Buffer, scheduling, and publication. Reels in the application, deployment, authentication, analytics, and the broader dashboard remain future work.
 
 ## Core principles
 
@@ -108,19 +108,18 @@ Use SQLite initially.
 - default_hashtags
 - created_at
 
-### draft_posts
+### campaigns and draft posts
 
 - id
 - brand_id
 - title
-- template
-- headline
-- body
-- footer_cta
+- immutable format preference on the campaign: auto / image / carousel
+- concrete post format: image / carousel
+- engagement intent, content structure and specific CTA
 - caption
 - hashtags
-- alt_text
-- image_path
+- ordered slides with role, portrait template, bounded copy, approved asset ID and alt text
+- complete preview-set paths and render state
 - status: draft / approved / rejected / sent_to_buffer / published
 - scheduled_for
 - buffer_post_id

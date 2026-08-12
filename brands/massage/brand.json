@@ -156,10 +156,12 @@
     }
   ],
   "staticTemplates": [
-    "problem",
-    "feature",
-    "hook",
-    "cta"
+    "bold-hook",
+    "photo-led",
+    "useful-point",
+    "contrast",
+    "human-prompt",
+    "action"
   ],
   "visualStyle": {
     "palette": {
@@ -171,6 +173,11 @@
     },
     "headlineFont": "Georgia",
     "bodyFont": "Arial",
+    "aspectRatio": "portrait",
+    "canvas": { "width": 1080, "height": 1350 },
+    "photoTreatments": ["full-bleed", "split", "framed", "none"]
+  },
+  "legacyVisualStyle": {
     "imageOpacity": 18,
     "safeMode": "airy",
     "aspectRatio": "square"

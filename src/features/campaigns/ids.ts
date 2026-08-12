@@ -23,6 +23,6 @@ export function createSubmissionKey(): SubmissionKey {
   return randomUUID() as SubmissionKey;
 }
 
-export function newOpaqueId(prefix: "cmp" | "post" | "att"): string {
+export function newOpaqueId(prefix: "cmp" | "post" | "slide" | "att"): string {
   return prefix + "_" + randomUUID();
 }

@@ -141,6 +141,37 @@ h1 {
   font-weight: 700;
 }
 
+.format-preference,
+.slide-edit {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.format-preference {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.format-preference label {
+  display: flex;
+  grid-template-columns: none;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.format-preference input {
+  width: 1.25rem;
+  min-height: 1.25rem;
+  margin-top: 0.2rem;
+}
+
+.format-preference small,
+.format-preference strong {
+  display: block;
+}
+
 .campaign-form input,
 .campaign-form select,
 .campaign-form textarea {
@@ -335,6 +366,61 @@ h1 {
   color: var(--muted);
   background: #eceae3;
   border-radius: 0.7rem;
+}
+
+.preview-placeholder.portrait,
+.carousel-viewer .preview.portrait {
+  aspect-ratio: 4 / 5;
+  object-fit: contain;
+  background: #eceae3;
+}
+
+.preview-placeholder.historical,
+.carousel-viewer .preview.historical {
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.carousel-viewer {
+  min-width: 0;
+}
+
+.carousel-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.carousel-button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.4rem;
+}
+
+.post-contract,
+.rights-note {
+  color: var(--muted);
+}
+
+.alt-text-list {
+  padding-left: 1.25rem;
+}
+
+.slide-edit-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.slide-edit {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.slide-edit legend {
+  padding-inline: 0.35rem;
+  font-weight: 800;
 }
 
 .copy-stack section {

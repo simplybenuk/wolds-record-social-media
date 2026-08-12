@@ -39,7 +39,16 @@ export const CONTENT_PILLARS = [
   "owner-learning",
   "academy-story",
 ] as const;
-export const VISUAL_TEMPLATES = ["problem", "feature", "hook", "cta"] as const;
+export const FORMAT_PREFERENCES = ["auto", "image", "carousel"] as const;
+export const POST_FORMATS = ["image", "carousel"] as const;
+export const ENGAGEMENT_INTENTS = ["save", "send", "comment", "follow", "enquire"] as const;
+export const CONTENT_STRUCTURES = [
+  "checklist", "myth-reality", "signs", "mistakes", "workflow", "point-of-view", "question",
+] as const;
+export const VISUAL_TEMPLATES = [
+  "bold-hook", "photo-led", "useful-point", "contrast", "human-prompt", "action",
+] as const;
+export const SLIDE_ROLES = ["standalone", "cover", "content", "action"] as const;
 export const GENERATION_MODES = ["live", "fixture"] as const;
 export const CAMPAIGN_STATUSES = ["pending", "review", "failed"] as const;
 export const REVIEW_STATUSES = ["draft", "approved", "rejected"] as const;
@@ -56,6 +65,11 @@ export type BrandId = (typeof BRAND_IDS)[number];
 export type CampaignObjective = (typeof CAMPAIGN_OBJECTIVES)[number];
 export type ContentPillar = (typeof CONTENT_PILLARS)[number];
 export type VisualTemplate = (typeof VISUAL_TEMPLATES)[number];
+export type FormatPreference = (typeof FORMAT_PREFERENCES)[number];
+export type PostFormat = (typeof POST_FORMATS)[number];
+export type EngagementIntent = (typeof ENGAGEMENT_INTENTS)[number];
+export type ContentStructure = (typeof CONTENT_STRUCTURES)[number];
+export type SlideRole = (typeof SLIDE_ROLES)[number];
 export type GenerationMode = (typeof GENERATION_MODES)[number];
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
@@ -106,26 +120,41 @@ export type BrandPack = {
     };
     headlineFont: string;
     bodyFont: string;
+    aspectRatio: "portrait";
+    canvas: { width: 1080; height: 1350 };
+    photoTreatments: Array<"full-bleed" | "split" | "framed" | "none">;
+  };
+  legacyVisualStyle: {
     imageOpacity: number;
     safeMode: "airy";
     aspectRatio: "square";
   };
 };
 
+export type GeneratedSlide = {
+  ordinal: number;
+  role: SlideRole;
+  visualTemplate: VisualTemplate;
+  headline: string;
+  body: string | null;
+  emphasis: string | null;
+  footer: string | null;
+  photoAssetId: string | null;
+  altText: string;
+};
+
 export type GeneratedPost = {
+  format: PostFormat;
   objective: CampaignObjective;
   pillar: ContentPillar;
   proposedDate: string;
-  visualTemplate: VisualTemplate;
-  headline: string;
-  emphasis: string | null;
-  body: string;
-  footer: string;
+  engagementIntent: EngagementIntent;
+  contentStructure: ContentStructure;
+  engagementCta: string;
   instagramCaption: string;
   facebookCaption: string;
   hashtags: string[];
-  altText: string;
-  photoAssetId: string | null;
+  slides: GeneratedSlide[];
 };
 
 export type GeneratedCampaign = {
@@ -136,6 +165,7 @@ export type GeneratedCampaign = {
 export type CampaignInput = {
   submissionKey: SubmissionKey;
   brandId: BrandId;
+  formatPreference: FormatPreference;
   brief: string;
   postCount: number;
   startDate: string;

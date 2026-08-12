@@ -149,10 +149,12 @@
     }
   ],
   "staticTemplates": [
-    "problem",
-    "feature",
-    "hook",
-    "cta"
+    "bold-hook",
+    "photo-led",
+    "useful-point",
+    "contrast",
+    "human-prompt",
+    "action"
   ],
   "visualStyle": {
     "palette": {
@@ -164,6 +166,11 @@
     },
     "headlineFont": "Montserrat",
     "bodyFont": "Open Sans",
+    "aspectRatio": "portrait",
+    "canvas": { "width": 1080, "height": 1350 },
+    "photoTreatments": ["full-bleed", "split", "framed", "none"]
+  },
+  "legacyVisualStyle": {
     "imageOpacity": 17,
     "safeMode": "airy",
     "aspectRatio": "square"

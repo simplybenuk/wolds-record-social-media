@@ -313,3 +313,73 @@ Files changed: README.md and agents_log.txt; retained the branch's LAN access gu
 and complete chronological multi-brand history, avoiding the duplicate main log entry.
 Verification: git diff --check and the repository validation suite pending.
 Manual follow-up: commit and push the resolved merge when authorized.
+
+2026-08-12 14:54 UTC — specified the Instagram engagement creative system
+Files changed: plans/discovery/instagram-engagement-creative-system.md and
+plans/specs/instagram-engagement-creative-system.md.
+Verification: both artifacts were read back; required discovery/spec sections and
+READY FOR HUMAN APPROVAL status are present; git diff --check passed.
+Manual follow-up: human review of format intents, carousel range and slice priority;
+no development, live generation or external service action was performed.
+
+2026-08-12 UTC — Instagram engagement creative system approved for development
+Files changed: plans/specs/instagram-engagement-creative-system.md and agents_log.txt.
+Verification: recorded the project owner's explicit approval and advanced the spec
+from READY FOR HUMAN APPROVAL to APPROVED FOR DEVELOPMENT.
+Manual follow-up: create the dedicated development worktree/branch; no commit,
+publication or external service action was performed.
+
+2026-08-12 UTC — prepared the Instagram engagement development worktree
+Files changed: no product files; approved discovery/spec artifacts and the append-only
+log were transferred to this worktree on feature/instagram-engagement-creative-system.
+Verification: source/destination hashes matched, spec status is APPROVED FOR DEVELOPMENT,
+git diff --check passed, and the original main worktree was restored clean.
+Manual follow-up: begin development in this worktree; changes remain uncommitted.
+
+2026-08-12 15:50 UTC — implemented Instagram portrait and carousel creative system
+Files changed: campaign migration/domain/generation/rendering/UI/tests, all three brand
+packs/prompts, README.md, automation-plan.md, and the change task artifact.
+Verification: check; 63 legacy + 52 TypeScript tests; posts check (0/0/20); Reel lint
+(3 ok); build; 390x844 carousel/edit/reload/review browser flow; six-template visual
+inspection; legacy PNG md5 unchanged; posts.json byte diff empty.
+Manual follow-up: independent agent review, then bounded human fixture/live output testing;
+no live generation, upload, publication, commit, or push was performed here.
+
+2026-08-12 15:55 UTC — independent review returned Instagram creative system to development
+Files changed: plans/reviews/instagram-engagement-creative-system.md and agents_log.txt.
+Verification: npm run check, npm test (63 legacy + 52 TypeScript), posts check (0/0/20),
+Reel lint (3 ok), build, git diff --check, and posts.json hash/diff checks passed.
+Manual follow-up: resolve the five blocking integrity/approval/render/contract findings and
+two should-fix traceability/atomicity findings, rerun all gates, then repeat agent review.
+
+2026-08-12 16:11 UTC — remediated Instagram creative-system agent review findings
+Files changed: campaign migration/schema/repository/domain/UI/render validation and focused
+tests, README.md, automation-plan.md, task/review traceability, and this append-only log.
+Verification: check; 63 legacy + 58 TypeScript tests; posts check (0/0/20); Reel lint
+(3 ok); build; successful 390x844 mobile browser flow; legacy PNG md5 and posts.json hash
+unchanged; git diff --check passed.
+Manual follow-up: repeat independent agent review; no live generation, upload, publication,
+commit, push, or pull request was performed here.
+
+2026-08-12 16:34 UTC — remediated migrated-square approval and PNG integrity review findings
+Files changed: shared approval readiness, PNG structural validation, migration/PNG tests,
+README.md, automation-plan.md, task/review traceability, and this append-only log.
+Verification: check; 63 legacy + 58 TypeScript tests; posts check (0/0/20); Reel lint
+(3 ok); build; 390x844 mobile browser flow; historical square re-approval preserved bytes;
+legacy PNG md5 and posts.json hash unchanged; git diff --check passed.
+Manual follow-up: repeat independent agent review; no live generation, upload, publication,
+commit, push, or pull request was performed here.
+
+2026-08-12 16:21 UTC — second independent review found a migrated-square approval regression
+Files changed: plans/reviews/instagram-engagement-creative-system.md and agents_log.txt.
+Verification: independently passed check, 63 legacy + 58 TypeScript tests, posts check,
+Reel lint, build, git diff check, posts.json hash/diff, and the isolated 390x844 mobile flow.
+Manual follow-up: preserve square-file re-approval without rerender, strengthen complete PNG
+validation, rerun all gates, then repeat agent review; human testing remains blocked.
+
+2026-08-12 16:35 UTC — third independent review cleared Instagram creative system for human testing
+Files changed: plans/reviews/instagram-engagement-creative-system.md and agents_log.txt.
+Verification: independently passed check, 63 legacy + 58 TypeScript tests, posts check,
+Reel lint, build, diff/hash checks, isolated 390x844 mobile flow, and extra PNG integrity probes.
+Manual follow-up: human-test representative brand/template output and migrated square review;
+success hands off to archive, while any defect returns to development.

@@ -115,8 +115,8 @@ export function legacyRendererBrandFor(pack: BrandPack) {
       headlineFont: pack.visualStyle.headlineFont,
       bodyFont: pack.visualStyle.bodyFont,
     },
-    imageOpacity: pack.visualStyle.imageOpacity,
-    safeMode: pack.visualStyle.safeMode,
-    aspectRatio: pack.visualStyle.aspectRatio,
+    imageOpacity: pack.legacyVisualStyle.imageOpacity,
+    safeMode: pack.legacyVisualStyle.safeMode,
+    aspectRatio: pack.legacyVisualStyle.aspectRatio,
   } as const;
 }

@@ -156,14 +156,16 @@ export class StaticImageRenderer {
     const pathParts = relativePath.split("/");
     if(
       extname(relativePath).toLowerCase() !== ".png" ||
-      pathParts.length !== 3 ||
+      (pathParts.length !== 5 && pathParts.length !== 3) ||
       pathParts[0] !== "campaigns" ||
       !/^[a-zA-Z0-9_-]+$/.test(pathParts[1]) ||
-      !/^[a-zA-Z0-9_-]+\.png$/.test(pathParts[2])
+      (pathParts.length === 3
+        ? !/^[a-zA-Z0-9_-]+\.png$/.test(pathParts[2])
+        : !/^[a-zA-Z0-9_-]+$/.test(pathParts[2]) || !/^\.tmp_[a-zA-Z0-9_-]+$/.test(pathParts[3]) || !/^[0-6]\.png$/.test(pathParts[4]))
     ){
       throw new StaticImageRenderError(
         "write_failed",
-        "Generated image path must be campaigns/<campaign-id>/<post-id>.png."
+        "Generated image path must be a validated campaign post PNG path."
       );
     }
 

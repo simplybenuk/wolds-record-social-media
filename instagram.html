@@ -444,6 +444,12 @@
         <div class="field">
           <label for="template">Template</label>
           <select id="template">
+            <option value="bold-hook">Bold hook</option>
+            <option value="photo-led">Photo led</option>
+            <option value="useful-point">Useful point</option>
+            <option value="contrast">Contrast</option>
+            <option value="human-prompt">Human prompt</option>
+            <option value="action">Action</option>
             <option value="hook">Hook slide</option>
             <option value="problem">Problem slide</option>
             <option value="feature">Feature / benefit slide</option>
@@ -1337,6 +1343,8 @@ function draw(){
   const H = canvas.height;
   const ratio = $("aspectRatio").value;
   const safe = $("safeMode").value;
+  const template = $("template").value;
+  const portraitCreative = ratio === "portrait" && ["bold-hook", "photo-led", "useful-point", "contrast", "human-prompt", "action"].includes(template);
 
   const heightScale = H / 1350;
 
@@ -1366,7 +1374,20 @@ function draw(){
   if(photoImg){
     const opacity = Number($("imageOpacity").value) / 100;
 
-    if(ratio === "landscape"){
+    if(portraitCreative && template === "photo-led"){
+      coverImage(photoImg, 0, 0, W, H, 1);
+      const shade = ctx.createLinearGradient(0, H * .28, 0, H);
+      shade.addColorStop(0, "rgba(0,0,0,0)");
+      shade.addColorStop(1, "rgba(0,0,0,.78)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 0, W, H);
+    } else if(portraitCreative && template === "useful-point"){
+      coverImage(photoImg, margin, 680, W - margin * 2, 390, Math.max(.75, opacity));
+    } else if(portraitCreative && template === "contrast"){
+      coverImage(photoImg, W * .54, 0, W * .46, H, Math.max(.8, opacity));
+    } else if(portraitCreative && template !== "bold-hook"){
+      coverImage(photoImg, W * .48, H * .45, W * .52, H * .55, Math.max(.65, opacity));
+    } else if(ratio === "landscape"){
       coverImage(photoImg, W * 0.62, H * 0.08, W * 0.38, H * 0.92, opacity);
     } else {
       coverImage(photoImg, W * 0.52, H * 0.47, W * 0.48, H * 0.53, opacity);
@@ -1387,11 +1408,36 @@ function draw(){
   ctx.fill();
   ctx.restore();
 
+  if(portraitCreative && template === "contrast"){
+    ctx.fillStyle = activePalette.deep;
+    ctx.fillRect(0, 0, W * .54, H);
+  }
+  if(portraitCreative && template === "action"){
+    ctx.fillStyle = activePalette.deep;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = activePalette.accent;
+    ctx.fillRect(margin, 250, 18, 520);
+  }
+
   // Logo or text mark
   const topY = ratio === "landscape" ? 48 : 64;
   const logoH = ratio === "landscape" ? 50 : 82;
+  const darkCreative = portraitCreative && ["contrast", "action"].includes(template);
 
-  if(logoImg){
+  if(darkCreative){
+    ctx.fillStyle = activePalette.paper;
+    ctx.beginPath();
+    ctx.roundRect(margin - 22, topY - 18, 390, 112, 22);
+    ctx.fill();
+    if(logoImg){
+      const logoRatio = logoImg.width / logoImg.height;
+      const badgeLogoH = 64;
+      ctx.drawImage(logoImg, margin, topY, badgeLogoH * logoRatio, badgeLogoH);
+    }
+    ctx.font = `700 27px ${headlineFamily()}`;
+    ctx.fillStyle = activePalette.deep;
+    ctx.fillText($("kicker").value, margin + 92, topY + 43, 260);
+  } else if(logoImg){
     const logoRatio = logoImg.width / logoImg.height;
     ctx.drawImage(logoImg, margin, topY, logoH * logoRatio, logoH);
   } else {
@@ -1401,7 +1447,7 @@ function draw(){
   }
 
   // Kicker if logo exists
-  if(logoImg){
+  if(logoImg && !darkCreative){
     ctx.font = `700 ${ratio === "landscape" ? 18 : 24}px ${bodyFamily()}`;
     ctx.fillStyle = activePalette.inkSoft;
     ctx.fillText($("kicker").value, margin, topY + logoH + 28);
@@ -1414,7 +1460,11 @@ function draw(){
 
   let y;
 
-  if(ratio === "landscape"){
+  if(portraitCreative && template === "photo-led"){
+    y = 750;
+  } else if(portraitCreative && template === "human-prompt"){
+    y = 410;
+  } else if(ratio === "landscape"){
     y = 175;
   } else if(ratio === "square"){
     y = safe === "airy" ? 285 : 250;
@@ -1423,10 +1473,13 @@ function draw(){
   }
 
   for(const rawLine of headline){
-    const wrapped = wrapLineByWords(rawLine, maxTextWidth, headlineFont);
+    const creativeTextWidth = template === "contrast" ? W * .39 : maxTextWidth;
+    const wrapped = wrapLineByWords(rawLine, creativeTextWidth, headlineFont);
 
     for(const line of wrapped){
-      drawHighlightedLine(line, margin, y, headlineFont, activePalette.ink, emphasis, activePalette.deep);
+      const headlineColour = portraitCreative && ["photo-led", "contrast", "action"].includes(template) ? activePalette.paper : activePalette.ink;
+      const highlightColour = template === "action" ? activePalette.accent : activePalette.deep;
+      drawHighlightedLine(line, margin, y, headlineFont, headlineColour, emphasis, highlightColour);
       y += lineHeight;
     }
   }
@@ -1436,11 +1489,12 @@ function draw(){
 
   const bodyFont = `400 ${bodySize}px ${bodyFamily()}`;
   ctx.font = bodyFont;
-  ctx.fillStyle = activePalette.ink;
+  ctx.fillStyle = portraitCreative && ["photo-led", "contrast", "action"].includes(template) ? activePalette.paper : activePalette.ink;
 
   const bodyLines = [];
   $("body").value.split("\n").forEach(p => {
-    bodyLines.push(...wrapLineByWords(p, ratio === "landscape" ? W * 0.54 : maxTextWidth * 0.92, bodyFont));
+    const bodyWidth = template === "contrast" ? W * .38 : ratio === "landscape" ? W * 0.54 : maxTextWidth * 0.92;
+    bodyLines.push(...wrapLineByWords(p, bodyWidth, bodyFont));
   });
 
   for(const line of bodyLines){
@@ -1452,7 +1506,7 @@ function draw(){
   // Divider
   const dividerY = ratio === "landscape" ? H - 112 : H - scaleToHeight(220, H);
 
-  ctx.strokeStyle = activePalette.deep;
+  ctx.strokeStyle = portraitCreative && ["photo-led", "contrast", "action"].includes(template) ? activePalette.accent : activePalette.deep;
   ctx.lineWidth = ratio === "landscape" ? 4 : 5;
   ctx.beginPath();
   ctx.moveTo(margin, dividerY);
@@ -1462,9 +1516,10 @@ function draw(){
   // Footer
   const footerFont = `700 ${footerSize}px ${bodyFamily()}`;
   ctx.font = footerFont;
-  ctx.fillStyle = activePalette.deep;
+  ctx.fillStyle = portraitCreative && ["photo-led", "contrast", "action"].includes(template) ? activePalette.paper : activePalette.deep;
 
-  const footerLines = wrapLineByWords($("footer").value, ratio === "landscape" ? W * 0.58 : maxTextWidth * 0.88, footerFont);
+  const footerWidth = template === "contrast" ? W * .38 : ratio === "landscape" ? W * 0.58 : maxTextWidth * 0.88;
+  const footerLines = wrapLineByWords($("footer").value, footerWidth, footerFont);
 
   let fy = dividerY + (ratio === "landscape" ? 44 : 65);
 

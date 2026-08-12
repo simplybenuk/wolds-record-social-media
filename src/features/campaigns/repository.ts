@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
+import { resolve } from "node:path";
 import { and, asc, desc, eq, lt } from "drizzle-orm";
 
 import type { AppDatabase } from "@/db";
-import { campaigns, draftPosts, generationAttempts } from "@/db/schema";
-import type { CampaignRow, DraftPostRow, GenerationAttemptRow } from "@/db/schema";
+import { campaigns, draftPosts, draftPostSlides, generationAttempts } from "@/db/schema";
+import type { CampaignRow, DraftPostRow, DraftPostSlideRow, GenerationAttemptRow } from "@/db/schema";
 import { newOpaqueId } from "./ids";
-import type { BrandId, GeneratedCampaign } from "./types";
+import type { BrandId, FormatPreference, GeneratedCampaign, GeneratedPost } from "./types";
+import { assertCompletePortraitSet, assertLegacySquarePng } from "@/lib/rendering/png-validation";
 
 export const INTERRUPTED_AFTER_MS = 10 * 60 * 1000;
 
@@ -20,6 +22,7 @@ type NewCampaign = {
   model: string;
   brandPackVersion: string;
   brandId?: BrandId;
+  formatPreference?: FormatPreference;
 };
 
 type Usage = {
@@ -31,9 +34,39 @@ type Usage = {
 
 export type CampaignBundle = {
   campaign: CampaignRow;
-  posts: DraftPostRow[];
+  posts: Array<DraftPostRow & { slides: DraftPostSlideRow[] }>;
   attempts: GenerationAttemptRow[];
 };
+
+export function hasCompleteCurrentPreview(post: DraftPostRow & { slides: DraftPostSlideRow[] }) {
+  const expectedCount = post.format === "image" ? 1 : post.slides.length;
+  if (post.renderStatus !== "ready" || post.previewOutOfDate || expectedCount !== post.slides.length || !post.imagePath || post.imagePath !== post.slides[0]?.imagePath) return false;
+  if (post.format === "carousel" && (expectedCount < 3 || expectedCount > 7)) return false;
+  return post.slides.every((slide, index) => {
+    const expectedRole = post.format === "image" ? "standalone" : index === 0 ? "cover" : index === expectedCount - 1 ? "action" : "content";
+    return slide.ordinal === index && slide.role === expectedRole && slide.renderStatus === "ready" && !slide.previewOutOfDate && Boolean(slide.imagePath);
+  });
+}
+
+export function isMigratedLegacySquare(post: DraftPostRow & { slides: DraftPostSlideRow[] }) {
+  const expectedPath = `campaigns/${post.campaignId}/${post.id}.png`;
+  return post.format === "image" && post.headline !== null && post.slides.length === 1 &&
+    post.imagePath === expectedPath && post.slides[0]?.imagePath === expectedPath;
+}
+
+export function canApproveCurrentPreview(
+  post: DraftPostRow & { slides: DraftPostSlideRow[] },
+  mediaRoot = resolve(process.cwd(), "generated"),
+) {
+  if (!hasCompleteCurrentPreview(post)) return false;
+  try {
+    if (isMigratedLegacySquare(post)) assertLegacySquarePng(mediaRoot, post.imagePath!);
+    else assertCompletePortraitSet(mediaRoot, post.slides.map((slide) => slide.imagePath!), post.slides.map((slide) => slide.ordinal));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const now = () => new Date().toISOString();
 
@@ -79,6 +112,7 @@ export function createPendingCampaign(database: AppDatabase, input: NewCampaign)
       postCount: input.postCount,
       startDate: input.startDate,
       endDate: input.endDate,
+      formatPreference: input.formatPreference ?? "image",
       status: "pending",
       generationMode: input.generationMode,
       model: input.model,
@@ -102,10 +136,12 @@ export function createPendingCampaign(database: AppDatabase, input: NewCampaign)
           postCount: input.postCount,
           startDate: input.startDate,
           endDate: input.endDate,
+          formatPreference: input.formatPreference ?? "image",
         })).digest("hex"),
         postCount: input.postCount,
         startDate: input.startDate,
         endDate: input.endDate,
+        formatPreference: input.formatPreference ?? "image",
       }),
       brandPackVersion: input.brandPackVersion,
       status: "pending",
@@ -180,13 +216,21 @@ export function completeCampaignGeneration(
     }
 
     generated.posts.forEach((post, ordinal) => {
+      const postId = newOpaqueId("post");
       database.orm.insert(draftPosts).values({
-        id: newOpaqueId("post"),
+        id: postId,
         campaignId,
         ordinal,
-        format: "image",
+        format: post.format,
         brandId: campaign.brandId,
-        ...post,
+        objective: post.objective,
+        pillar: post.pillar,
+        proposedDate: post.proposedDate,
+        engagementIntent: post.engagementIntent,
+        contentStructure: post.contentStructure,
+        engagementCta: post.engagementCta,
+        instagramCaption: post.instagramCaption,
+        facebookCaption: post.facebookCaption,
         hashtags: JSON.stringify(post.hashtags),
         reviewStatus: "draft",
         renderStatus: "pending",
@@ -200,6 +244,13 @@ export function completeCampaignGeneration(
         createdAt: timestamp,
         updatedAt: timestamp,
       }).run();
+      post.slides.forEach((slide) => database.orm.insert(draftPostSlides).values({
+        id: newOpaqueId("slide"), postId, ...slide,
+        renderStatus: "pending", imagePath: null,
+        safeRenderErrorCode: null, safeRenderErrorMessage: null,
+        previewOutOfDate: false, version: 1,
+        createdAt: timestamp, updatedAt: timestamp,
+      }).run());
     });
 
     database.orm.update(generationAttempts).set({
@@ -327,6 +378,13 @@ export function markInterruptedWork(database: AppDatabase, campaignId: string, a
         safeRenderErrorMessage: "Preview rendering was interrupted. Retry rendering when you are ready.",
         updatedAt: timestamp,
       }).where(eq(draftPosts.id, post.id)).run();
+      database.orm.update(draftPostSlides).set({
+        renderStatus: "failed",
+        previewOutOfDate: true,
+        safeRenderErrorCode: "render_interrupted",
+        safeRenderErrorMessage: "Preview rendering was interrupted. Retry rendering when you are ready.",
+        updatedAt: timestamp,
+      }).where(eq(draftPostSlides.postId, post.id)).run();
     }
   });
   return stale.length + staleRenders.length;
@@ -340,7 +398,9 @@ export function getCampaignBundle(database: AppDatabase, campaignId: string): Ca
     campaign,
     posts: database.orm.select().from(draftPosts)
       .where(eq(draftPosts.campaignId, campaignId))
-      .orderBy(asc(draftPosts.proposedDate), asc(draftPosts.ordinal)).all(),
+      .orderBy(asc(draftPosts.proposedDate), asc(draftPosts.ordinal)).all()
+      .map((post) => ({ ...post, slides: database.orm.select().from(draftPostSlides)
+        .where(eq(draftPostSlides.postId, post.id)).orderBy(asc(draftPostSlides.ordinal)).all() })),
     attempts: database.orm.select().from(generationAttempts)
       .where(eq(generationAttempts.campaignId, campaignId))
       .orderBy(desc(generationAttempts.createdAt)).all(),
@@ -362,7 +422,7 @@ export function updateDraftPost(
   database: AppDatabase,
   postId: string,
   expectedVersion: number,
-  changes: Partial<Omit<DraftPostRow, "id" | "campaignId" | "createdAt">>,
+  changes: Partial<Pick<DraftPostRow, "objective" | "pillar" | "proposedDate" | "engagementIntent" | "contentStructure" | "engagementCta" | "instagramCaption" | "facebookCaption" | "hashtags" | "renderStatus" | "previewOutOfDate" | "safeRenderErrorCode" | "safeRenderErrorMessage">>,
 ) {
   const result = database.orm.update(draftPosts)
     .set({ ...changes, version: expectedVersion + 1, updatedAt: now() })
@@ -374,18 +434,56 @@ export function updateDraftPost(
   if (result.changes !== 1) throw new StalePostVersionError();
 }
 
+export function updateDraftPostContent(
+  database: AppDatabase,
+  postId: string,
+  expectedVersion: number,
+  post: GeneratedPost,
+) {
+  inTransaction(database, () => {
+    const current = database.orm.select().from(draftPosts).where(eq(draftPosts.id, postId)).get();
+    if (!current || current.version !== expectedVersion || current.reviewStatus !== "draft") throw new StalePostVersionError();
+    const currentSlides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
+    if (current.format !== post.format || currentSlides.length !== post.slides.length) throw new Error("post_structure_immutable");
+    const timestamp = now();
+    database.orm.update(draftPosts).set({
+      objective: post.objective, pillar: post.pillar, proposedDate: post.proposedDate,
+      engagementIntent: post.engagementIntent, contentStructure: post.contentStructure,
+      engagementCta: post.engagementCta, instagramCaption: post.instagramCaption,
+      facebookCaption: post.facebookCaption, hashtags: JSON.stringify(post.hashtags),
+      renderStatus: "pending", previewOutOfDate: currentSlides.some((slide) => Boolean(slide.imagePath)),
+      safeRenderErrorCode: null, safeRenderErrorMessage: null,
+      version: expectedVersion + 1, updatedAt: timestamp,
+    }).where(and(eq(draftPosts.id, postId), eq(draftPosts.version, expectedVersion))).run();
+    post.slides.forEach((slide, index) => {
+      const before = currentSlides[index]!;
+      database.orm.update(draftPostSlides).set({
+        ...slide, renderStatus: "pending", previewOutOfDate: Boolean(before.imagePath),
+        safeRenderErrorCode: null, safeRenderErrorMessage: null,
+        version: before.version + 1, updatedAt: timestamp,
+      }).where(and(eq(draftPostSlides.id, before.id), eq(draftPostSlides.version, before.version))).run();
+    });
+  });
+}
+
 export function transitionReviewStatus(
   database: AppDatabase,
   campaignId: string,
   postId: string,
   expectedVersion: number,
   target: "draft" | "approved" | "rejected",
+  mediaRoot = resolve(process.cwd(), "generated"),
 ) {
   const post = database.orm.select().from(draftPosts).where(and(
     eq(draftPosts.id, postId),
     eq(draftPosts.campaignId, campaignId),
   )).get();
   if (!post || post.version !== expectedVersion) throw new StalePostVersionError();
+  if (target === "approved") {
+    const slides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
+    const candidate = { ...post, slides };
+    if (!canApproveCurrentPreview(candidate, mediaRoot)) throw new Error("post_preview_not_ready");
+  }
   const allowed =
     (post.reviewStatus === "draft" && (target === "approved" || target === "rejected")) ||
     ((post.reviewStatus === "approved" || post.reviewStatus === "rejected") && target === "draft");
@@ -481,6 +579,7 @@ export function createPostRegenerationAttempt(
     if (!campaign || !post || post.campaignId !== campaignId) throw new Error("post_not_found");
     if (post.version !== expectedVersion) throw new StalePostVersionError();
     if (post.reviewStatus !== "draft") throw new Error("post_not_draft");
+    const slides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
     const inFlight = database.orm.select().from(generationAttempts)
       .where(and(
         eq(generationAttempts.campaignId, campaignId),
@@ -514,10 +613,14 @@ export function createPostRegenerationAttempt(
       inputSnapshot: JSON.stringify({
         postId,
         version: post.version,
+        format: post.format,
+        slideCount: slides.length,
+        slideIdentity: slides.map((slide) => ({ id: slide.id, ordinal: slide.ordinal, version: slide.version })),
         promptHash: createHash("sha256").update(JSON.stringify({
           campaignBrief: campaign.brief,
           campaignTitle: campaign.title,
           post,
+          slides,
         })).digest("hex"),
       }),
       brandPackVersion,
@@ -556,8 +659,14 @@ export function completePostRegeneration(
     const current = database.orm.select().from(draftPosts).where(eq(draftPosts.id, postId)).get();
     if (!current || current.reviewStatus !== "draft") throw new Error("post_not_draft");
     if (current.version !== inputSnapshot.version) throw new StalePostVersionError();
+    if (current.format !== post.format) throw new Error("post_structure_immutable");
+    const oldSlides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
+    if (oldSlides.length !== post.slides.length) throw new Error("post_structure_immutable");
     database.orm.update(draftPosts).set({
-      ...post,
+      objective: post.objective, pillar: post.pillar, proposedDate: post.proposedDate,
+      engagementIntent: post.engagementIntent, contentStructure: post.contentStructure,
+      engagementCta: post.engagementCta,
+      instagramCaption: post.instagramCaption, facebookCaption: post.facebookCaption,
       hashtags: JSON.stringify(post.hashtags),
       renderStatus: "pending",
       previewOutOfDate: Boolean(current.imagePath),
@@ -568,6 +677,15 @@ export function completePostRegeneration(
       version: current.version + 1,
       updatedAt: timestamp,
     }).where(and(eq(draftPosts.id, postId), eq(draftPosts.version, current.version))).run();
+    post.slides.forEach((slide, index) => {
+      const previous = oldSlides[index]!;
+      database.orm.update(draftPostSlides).set({
+        ...slide,
+        renderStatus: "pending", previewOutOfDate: Boolean(previous.imagePath),
+        safeRenderErrorCode: null, safeRenderErrorMessage: null,
+        version: previous.version + 1, updatedAt: timestamp,
+      }).where(eq(draftPostSlides.id, previous.id)).run();
+    });
     database.orm.update(generationAttempts).set({
       status: "complete",
       structuredResult: JSON.stringify(post),
@@ -582,47 +700,69 @@ export function completePostRegeneration(
 }
 
 export function setRenderStarted(database: AppDatabase, postId: string, expectedVersion: number) {
-  const renderVersion = expectedVersion + 1;
-  const result = database.orm.update(draftPosts).set({
-    renderStatus: "rendering",
-    version: renderVersion,
-    updatedAt: now(),
-  }).where(and(eq(draftPosts.id, postId), eq(draftPosts.version, expectedVersion))).run();
-  if (result.changes !== 1) throw new StalePostVersionError();
-  return renderVersion;
+  return inTransaction(database, () => {
+    const renderVersion = expectedVersion + 1;
+    const timestamp = now();
+    const result = database.orm.update(draftPosts).set({ renderStatus: "rendering", version: renderVersion, updatedAt: timestamp })
+      .where(and(eq(draftPosts.id, postId), eq(draftPosts.version, expectedVersion), eq(draftPosts.reviewStatus, "draft"))).run();
+    if (result.changes !== 1) throw new StalePostVersionError();
+    const slides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
+    if (slides.length === 0) throw new Error("post_slides_missing");
+    const slideVersions = slides.map((slide) => {
+      const update = database.orm.update(draftPostSlides).set({ renderStatus: "rendering", version: slide.version + 1, updatedAt: timestamp })
+        .where(and(eq(draftPostSlides.id, slide.id), eq(draftPostSlides.version, slide.version))).run();
+      if (update.changes !== 1) throw new StalePostVersionError();
+      return { id: slide.id, version: slide.version + 1 };
+    });
+    return { postVersion: renderVersion, slideVersions };
+  });
 }
 
 export function setRenderReady(
   database: AppDatabase,
   postId: string,
-  expectedRenderVersion: number,
-  relativePath: string,
+  expected: { postVersion: number; slideVersions: Array<{ id: string; version: number }> },
+  relativePaths: string[],
 ) {
+  return inTransaction(database, () => {
+  const currentSlides = database.orm.select().from(draftPostSlides).where(eq(draftPostSlides.postId, postId)).orderBy(asc(draftPostSlides.ordinal)).all();
+  if (currentSlides.length !== expected.slideVersions.length || relativePaths.length !== currentSlides.length || currentSlides.some((slide, index) => slide.id !== expected.slideVersions[index]!.id || slide.version !== expected.slideVersions[index]!.version || slide.renderStatus !== "rendering")) return false;
+  assertCompletePortraitSet(resolve(process.cwd(), "generated"), relativePaths, currentSlides.map((slide) => slide.ordinal));
   const result = database.orm.update(draftPosts).set({
     renderStatus: "ready",
-    imagePath: relativePath,
+    imagePath: relativePaths[0]!,
     previewOutOfDate: false,
     safeRenderErrorCode: null,
     safeRenderErrorMessage: null,
-    version: expectedRenderVersion + 1,
+    version: expected.postVersion + 1,
     updatedAt: now(),
   }).where(and(
     eq(draftPosts.id, postId),
-    eq(draftPosts.version, expectedRenderVersion),
+    eq(draftPosts.version, expected.postVersion),
     eq(draftPosts.renderStatus, "rendering"),
   )).run();
-  return result.changes === 1;
+  if (result.changes !== 1) return false;
+  currentSlides.forEach((slide, index) => {
+    const updated = database.orm.update(draftPostSlides).set({
+      renderStatus: "ready", imagePath: relativePaths[index]!, previewOutOfDate: false,
+      safeRenderErrorCode: null, safeRenderErrorMessage: null,
+      version: slide.version + 1, updatedAt: now(),
+    }).where(and(eq(draftPostSlides.id, slide.id), eq(draftPostSlides.version, slide.version))).run();
+    if (updated.changes !== 1) throw new StalePostVersionError();
+  });
+  return true;
+  });
 }
 
 export function setRenderFailed(
   database: AppDatabase,
   postId: string,
-  expectedRenderVersion: number,
+  expected: { postVersion: number; slideVersions: Array<{ id: string; version: number }> },
   error: { code: string; message: string },
 ) {
   const post = database.orm.select().from(draftPosts).where(and(
     eq(draftPosts.id, postId),
-    eq(draftPosts.version, expectedRenderVersion),
+    eq(draftPosts.version, expected.postVersion),
   )).get();
   if (!post) return false;
   const result = database.orm.update(draftPosts).set({
@@ -634,8 +774,14 @@ export function setRenderFailed(
     updatedAt: now(),
   }).where(and(
     eq(draftPosts.id, postId),
-    eq(draftPosts.version, expectedRenderVersion),
+    eq(draftPosts.version, expected.postVersion),
     eq(draftPosts.renderStatus, "rendering"),
   )).run();
+  if (result.changes === 1) {
+    for (const expectedSlide of expected.slideVersions) {
+      const slide = database.orm.select().from(draftPostSlides).where(and(eq(draftPostSlides.id, expectedSlide.id), eq(draftPostSlides.version, expectedSlide.version))).get();
+      if (slide) database.orm.update(draftPostSlides).set({ renderStatus: "failed", previewOutOfDate: Boolean(slide.imagePath), safeRenderErrorCode: error.code, safeRenderErrorMessage: error.message, version: slide.version + 1, updatedAt: now() }).where(eq(draftPostSlides.id, slide.id)).run();
+    }
+  }
   return result.changes === 1;
 }
