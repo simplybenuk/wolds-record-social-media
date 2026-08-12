@@ -307,3 +307,9 @@ Verification: Next remained bound to 0.0.0.0:3011; the LAN URL at
 192.168.1.188:3011/campaigns/new returned HTTP 200; npm run check passed.
 Manual follow-up: phone must be on the same trusted Wi-Fi; use the current LAN IP
 if DHCP changes it, and do not expose port 3011 publicly.
+
+2026-08-12 UTC — resolved PR #4's merge conflicts against main.
+Files changed: README.md and agents_log.txt; retained the branch's LAN access guidance
+and complete chronological multi-brand history, avoiding the duplicate main log entry.
+Verification: git diff --check and the repository validation suite pending.
+Manual follow-up: commit and push the resolved merge when authorized.
