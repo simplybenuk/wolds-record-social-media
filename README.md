@@ -2,7 +2,7 @@
 
 ## Wolds Social Studio — campaign review slice
 
-The repository now includes a private, local Next.js application for creating and reviewing static-post campaigns for Wolds Record, Wolds Canine Massage Therapy, and Wolds Canine Therapy Academy. It persists campaigns, generation attempts, draft copy, rendered previews, and approve/reject decisions in SQLite. This slice does not upload, schedule, or publish anything.
+The repository now includes a private, local Next.js application for creating and reviewing Instagram-first static campaigns for Wolds Record, Wolds Canine Massage Therapy, and Wolds Canine Therapy Academy. New campaigns can request an automatic mix, portrait images, or 3–7-slide carousels. Every post records an engagement intent and content structure, renders at 1080×1350, and remains one approve/reject unit. Campaigns, generation attempts, ordered slides, complete preview sets, edits, and decisions persist in SQLite. The studio does not upload, schedule, or publish anything.
 
 Requirements: Node.js 22+, npm, and the Chromium installed for Playwright. Install dependencies and copy the environment template:
 
@@ -12,7 +12,7 @@ npx playwright-core install chromium
 cp .env.example .env
 ```
 
-Fixture mode is deterministic and makes no OpenAI request. Choose the brand when creating a campaign; the selected brand is fixed for that campaign and controls its copy rules, pillars, logo, palette and photo allow-list:
+Fixture mode is deterministic and makes no OpenAI request. Choose the brand and creative-format preference when creating a campaign; both are fixed for that campaign. The brand controls copy rules, audience priority, pillars, logo, palette and photo allow-list. Massage posts address dog owners, Academy posts default to owners and guardians unless a brief explicitly selects career or practitioner learning, and Record posts address practitioners. Six materially distinct portrait composition families provide photo-led, editorial, practical, comparison, conversation and action treatments. Automatic fixture campaigns with at least two posts deliberately include both an image and a carousel so the complete review flow remains testable:
 
 ```text
 GENERATION_MODE=fixture
@@ -42,9 +42,9 @@ If something else on the machine already holds port 3000, choose another one and
 PORT=3101 npm run dev
 ```
 
-For the one bounded human live-generation check, set `GENERATION_MODE=live`, `OPENAI_API_KEY`, and an `OPENAI_MODEL` that supports Responses API Structured Outputs. The server sends the brief and fixed `brands/record/` pack with `store: false`; never prefix these settings with `NEXT_PUBLIC_`.
+For the bounded human live-generation checks, set `GENERATION_MODE=live`, `OPENAI_API_KEY`, and an `OPENAI_MODEL` that supports Responses API Structured Outputs. The server sends the brief and selected immutable brand pack with `store: false`; never prefix these settings with `NEXT_PUBLIC_`.
 
-Local state lives in `data/social-studio.sqlite`; generated previews live under `generated/campaigns/`. Both are git-ignored. A generation or render left in progress for more than ten minutes is marked interrupted on the next campaign load and requires an explicit retry.
+Local state lives in `data/social-studio.sqlite`; generated previews live under `generated/campaigns/`. Both are git-ignored. Ordered `draft_post_slides` rows are the canonical visual source; retained pre-slide post columns are immutable migration evidence. Preview sets become ready only after the exact expected files pass complete PNG chunk/CRC/image-data validation at 1080×1350, and approval requires that complete current set. A failed or stale replacement keeps the last complete set visible. Migrated historical square previews remain approvable at their original path only when the preserved 1080×1080 PNG is valid; they are never re-rendered implicitly. A generation or render left in progress for more than ten minutes is marked interrupted on the next campaign load and requires an explicit retry.
 
 Validation:
 
@@ -52,6 +52,7 @@ Validation:
 npm run check
 npm test
 npm run posts:check
+npm run lint:compositions
 npm run build
 # With the app already running:
 npm run verify:mobile

@@ -47,6 +47,10 @@ try {
   await page.getByText("Post 3", { exact: false }).waitFor({ timeout: 120_000 });
   assert.equal(await page.locator("article.review-card").count(), 3);
   assert.equal(await page.locator("img.preview").count(), 3);
+  const initialCarousel = page.locator("article.review-card").nth(1);
+  assert.equal(await initialCarousel.getByText("1 of 4", { exact: true }).count(), 1);
+  await initialCarousel.getByRole("button", { name: "Next slide" }).click();
+  assert.equal(await initialCarousel.getByText("2 of 4", { exact: true }).count(), 1);
   assert.equal(await page.locator("[data-nextjs-dialog]").count(), 0);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   const buttonBoxes = await page.locator("main button:visible").evaluateAll((buttons) => buttons.map((button) => {
@@ -92,6 +96,19 @@ try {
   assert.notEqual(await firstCard.locator("img.preview").getAttribute("src"), originalFirstPreview);
 
   let secondCard = page.locator("article.review-card").nth(1);
+  await secondCard.locator("summary").click();
+  const secondSlide = secondCard.locator("fieldset.slide-edit").nth(1);
+  await secondSlide.getByLabel("Headline").fill("1. Keep the useful context close");
+  await secondSlide.getByLabel("Alt text").fill("Wolds Record second carousel slide about keeping useful context close.");
+  await secondCard.locator("details form").getByRole("button", { name: "Save changes" }).click();
+  await page.getByRole("listitem").filter({ hasText: "Wolds Record second carousel slide about keeping useful context close." }).waitFor();
+  secondCard = page.locator("article.review-card").nth(1);
+  await secondCard.getByRole("button", { name: "Next slide" }).click();
+  assert.equal(await secondCard.locator("img.preview").getAttribute("alt"), "Wolds Record second carousel slide about keeping useful context close.");
+  await page.reload({ waitUntil: "networkidle" });
+  secondCard = page.locator("article.review-card").nth(1);
+  await secondCard.getByRole("button", { name: "Next slide" }).click();
+  assert.equal(await secondCard.locator("img.preview").getAttribute("alt"), "Wolds Record second carousel slide about keeping useful context close.");
   const secondBefore = {
     headline: await secondCard.locator("h2").textContent(),
     preview: await secondCard.locator("img.preview").getAttribute("src"),
@@ -218,6 +235,8 @@ try {
     captionOnlyEditKeptPreview: true,
     visualEditRerendered: true,
     regenerationRevision: 2,
+    carouselNavigation: "all slides reachable",
+    intermediateSlideEditSurvivedReload: true,
     rejectAndReturnToDraft: true,
     staleWriteRejected: true,
     renderRetryRecovered: true,

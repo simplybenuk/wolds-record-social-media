@@ -14,6 +14,7 @@ import {
   StalePostVersionError,
   transitionReviewStatus,
   updateDraftPost,
+  updateDraftPostContent,
 } from "./repository";
 import { requireBrandPack } from "@/lib/brand/packs";
 import { CampaignDomainValidationError, validateGeneratedCampaign } from "./domain-validation";
@@ -29,6 +30,7 @@ const expectedActionErrors: Record<string, string> = {
   retry_not_allowed: "This generation cannot be retried from its current state.",
   review_transition_not_allowed: "That review change is not allowed from the current state.",
   render_retry_not_allowed: "This preview is not waiting for a retry.",
+  post_preview_not_ready: "Render a complete current preview set before approval.",
   request_key_conflict: "That action submission conflicts with an earlier request. Reload and try again.",
 };
 
@@ -63,6 +65,7 @@ export async function createCampaignAction(formData: FormData) {
     postCount: formData.get("postCount"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
+    formatPreference: formData.get("formatPreference"),
   });
   if (!parsed.success) {
     redirect("/campaigns/new?error=" + encodeURIComponent(parsed.error.issues[0]?.message ?? "Check the form."));
@@ -127,20 +130,29 @@ export async function editPostAction(formData: FormData) {
   const campaignId = String(formData.get("campaignId") ?? "");
   const postId = String(formData.get("postId") ?? "");
   const expectedVersion = Number(formData.get("version"));
+  const slideCount = Number(formData.get("slideCount"));
   const raw = {
+    format: formData.get("format"),
     objective: formData.get("objective"),
     pillar: formData.get("pillar"),
     proposedDate: formData.get("proposedDate"),
-    visualTemplate: formData.get("visualTemplate"),
-    headline: formData.get("headline"),
-    emphasis: String(formData.get("emphasis") ?? "").trim() || null,
-    body: formData.get("body"),
-    footer: formData.get("footer"),
+    engagementIntent: formData.get("engagementIntent"),
+    contentStructure: formData.get("contentStructure"),
+    engagementCta: formData.get("engagementCta"),
     instagramCaption: formData.get("instagramCaption"),
     facebookCaption: formData.get("facebookCaption"),
     hashtags: String(formData.get("hashtags") ?? "").split(/[\s,]+/).map((tag) => tag.replace(/^#/, "")).filter(Boolean),
-    altText: formData.get("altText"),
-    photoAssetId: String(formData.get("photoAssetId") ?? "").trim() || null,
+    slides: Array.from({ length: slideCount }, (_, index) => ({
+      ordinal: index,
+      role: formData.get(`slide.${index}.role`),
+      visualTemplate: formData.get(`slide.${index}.visualTemplate`),
+      headline: formData.get(`slide.${index}.headline`),
+      emphasis: String(formData.get(`slide.${index}.emphasis`) ?? "").trim() || null,
+      body: String(formData.get(`slide.${index}.body`) ?? "").trim() || null,
+      footer: String(formData.get(`slide.${index}.footer`) ?? "").trim() || null,
+      altText: formData.get(`slide.${index}.altText`),
+      photoAssetId: String(formData.get(`slide.${index}.photoAssetId`) ?? "").trim() || null,
+    })),
   };
   const parsed = generatedPostSchema.safeParse(raw);
   if (!parsed.success) {
@@ -165,6 +177,8 @@ export async function editPostAction(formData: FormData) {
           startDate: bundle!.campaign.startDate,
           endDate: bundle!.campaign.endDate,
           brandPack,
+          fixedFormat: before.format as "image" | "carousel",
+          fixedSlideCount: before.slides.length,
         },
       );
     } catch (error) {
@@ -173,17 +187,10 @@ export async function editPostAction(formData: FormData) {
       }
       throw error;
     }
-    const visualChanged = ["visualTemplate", "headline", "emphasis", "body", "footer", "photoAssetId"]
-      .some((key) =>
-        before[key as keyof typeof before] !== parsed.data[key as keyof typeof parsed.data]
-      );
-    updateDraftPost(database, postId, expectedVersion, {
-      ...parsed.data,
-      hashtags: JSON.stringify(parsed.data.hashtags),
-      renderStatus: visualChanged ? "pending" : before.renderStatus,
-      previewOutOfDate: before.previewOutOfDate || (visualChanged && Boolean(before.imagePath)),
-    });
+    const beforeVisual = JSON.stringify(before.slides.map(({ role, visualTemplate, headline, emphasis, body, footer, photoAssetId, altText }) => ({ role, visualTemplate, headline, emphasis, body, footer, photoAssetId, altText })));
+    const visualChanged = beforeVisual !== JSON.stringify(parsed.data.slides);
     if (visualChanged) {
+      updateDraftPostContent(database, postId, expectedVersion, parsed.data);
       const updated = getCampaignBundle(database, campaignId)!.posts.find((post) => post.id === postId)!;
       const renderer = createCampaignRenderer();
       try {
@@ -191,6 +198,14 @@ export async function editPostAction(formData: FormData) {
       } finally {
         await renderer.close();
       }
+    } else {
+      updateDraftPost(database, postId, expectedVersion, {
+        objective: parsed.data.objective, pillar: parsed.data.pillar,
+        proposedDate: parsed.data.proposedDate, engagementIntent: parsed.data.engagementIntent,
+        contentStructure: parsed.data.contentStructure, engagementCta: parsed.data.engagementCta,
+        instagramCaption: parsed.data.instagramCaption, facebookCaption: parsed.data.facebookCaption,
+        hashtags: JSON.stringify(parsed.data.hashtags),
+      });
     }
   } catch (error) {
     redirect(postErrorLocation(campaignId, postId, error));

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -22,6 +22,8 @@ import {
 } from "../src/features/campaigns/schemas.ts";
 import { FixtureCampaignGenerator } from "../src/lib/generation/fixture-generator.ts";
 import { recordBrandPack } from "../src/lib/brand/record.ts";
+import { canApproveCurrentPreview, getCampaignBundle, transitionReviewStatus } from "../src/features/campaigns/repository.ts";
+import { validPng } from "./png-fixture.ts";
 
 test("the Record pack reproduces today's five colours under semantic role names", () => {
   assert.deepEqual(recordBrandPack.visualStyle.palette, {
@@ -41,6 +43,26 @@ test("every enabled pack loads through one schema", () => {
   }
 });
 
+test("brand audience priorities keep owner brands separate from Record", () => {
+  const massage = requireBrandPack("massage");
+  const academy = requireBrandPack("academy");
+  const record = requireBrandPack("record");
+
+  assert.ok(massage.targetAudience.every((audience) => /owner/i.test(audience)));
+  assert.match(academy.targetAudience[0] ?? "", /owners|guardians/i);
+  assert.match(academy.purpose, /owner-first/i);
+  assert.ok(record.targetAudience.every((audience) => /practitioner/i.test(audience)));
+
+  const massagePrompt = readFileSync(resolve("brands/massage/prompt.md"), "utf8");
+  const academyPrompt = readFileSync(resolve("brands/academy/prompt.md"), "utf8");
+  const recordPrompt = readFileSync(resolve("brands/record/prompt.md"), "utf8");
+  assert.match(massagePrompt, /reader is not a therapist or practitioner/i);
+  assert.match(massagePrompt, /your dog/i);
+  assert.match(academyPrompt, /default to a dog owner or guardian/i);
+  assert.match(academyPrompt, /only address aspiring or developing therapists when the brief explicitly/i);
+  assert.match(recordPrompt, /only enabled brand whose default social audience is practitioners/i);
+});
+
 test("every enabled pack has readable approved assets and brand-scoped fixture copy", async () => {
   for (const pack of enabledBrandPacks()) {
     for (const asset of [pack.logo, ...pack.photoAssets]) {
@@ -55,7 +77,7 @@ test("every enabled pack has readable approved assets and brand-scoped fixture c
       brandPack: pack,
     });
     assert.equal(result.campaign.posts[0]?.pillar, pack.contentPillars[0]);
-    assert.match(result.campaign.posts[0]?.altText ?? "", new RegExp(pack.displayName));
+    assert.match(result.campaign.posts[0]?.slides[0]?.altText ?? "", new RegExp(pack.displayName));
   }
 });
 
@@ -76,7 +98,7 @@ test("structured output uses only the selected brand's pillars", async () => {
   }).success, false);
   assert.equal(schema.safeParse({
     ...fixture.campaign,
-    posts: [{ ...fixture.campaign.posts[0], photoAssetId: "wolds-record-dashboard" }],
+    posts: [{ ...fixture.campaign.posts[0], slides: [{ ...fixture.campaign.posts[0]!.slides[0], photoAssetId: "wolds-record-dashboard" }] }],
   }).success, false);
 });
 
@@ -129,7 +151,7 @@ test("an absent brand resolves to Record", () => {
 test("renderer brand input is pack-derived, not hardcoded", () => {
   const brand = legacyRendererBrandFor(recordBrandPack);
   assert.equal(brand.kicker, recordBrandPack.displayName);
-  assert.equal(brand.imageOpacity, recordBrandPack.visualStyle.imageOpacity);
+  assert.equal(brand.imageOpacity, recordBrandPack.legacyVisualStyle.imageOpacity);
   assert.equal(brand.handle, `@${recordBrandPack.instagramHandle}`);
   assert.deepEqual(brand.palette, recordBrandPack.visualStyle.palette);
 });
@@ -325,10 +347,10 @@ test("the migration preserves dependent rows and both foreign key chains", () =>
       .prepare(
         `INSERT INTO draft_posts (id, campaign_id, ordinal, format, brand_id, objective, pillar,
           proposed_date, visual_template, headline, body, footer, instagram_caption,
-          facebook_caption, hashtags, alt_text, review_status, render_status,
+          facebook_caption, hashtags, alt_text, review_status, render_status, image_path,
           latest_generation_attempt_id, created_at, updated_at)
          VALUES ('p1', 'c1', 1, 'image', 'record', 'education', 'record-keeping', '2026-08-01',
-          'problem', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'draft', 'pending', 'a1', 't', 't')`,
+          'problem', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'approved', 'ready', 'campaigns/c1/p1.png', 'a1', 't', 't')`,
       )
       .run();
     legacy.close();
@@ -340,6 +362,26 @@ test("the migration preserves dependent rows and both foreign key chains", () =>
         (database.client.prepare("SELECT count(*) AS n FROM draft_posts").get() as { n: number }).n,
         1,
       );
+      const campaign = database.client.prepare("SELECT id, format_preference FROM campaigns WHERE id = 'c1'").get() as { id: string; format_preference: string };
+      assert.deepEqual({ ...campaign }, { id: "c1", format_preference: "image" });
+      const migratedPost = database.client.prepare("SELECT id, format, review_status, image_path FROM draft_posts WHERE id = 'p1'").get() as Record<string, unknown>;
+      assert.deepEqual({ ...migratedPost }, { id: "p1", format: "image", review_status: "approved", image_path: "campaigns/c1/p1.png" });
+      const migratedSlide = database.client.prepare("SELECT post_id, ordinal, role, render_status, image_path FROM draft_post_slides WHERE post_id = 'p1'").get() as Record<string, unknown>;
+      assert.deepEqual({ ...migratedSlide }, { post_id: "p1", ordinal: 0, role: "standalone", render_status: "ready", image_path: "campaigns/c1/p1.png" });
+
+      const mediaRoot = join(directory, "generated");
+      const legacyPath = join(mediaRoot, "campaigns/c1/p1.png");
+      mkdirSync(join(legacyPath, ".."), { recursive: true });
+      const legacyBytes = validPng(1080, 1080);
+      writeFileSync(legacyPath, legacyBytes);
+      let bundle = getCampaignBundle(database, "c1")!;
+      assert.equal(canApproveCurrentPreview(bundle.posts[0]!, mediaRoot), true);
+      transitionReviewStatus(database, "c1", "p1", bundle.posts[0]!.version, "draft", mediaRoot);
+      bundle = getCampaignBundle(database, "c1")!;
+      assert.equal(canApproveCurrentPreview(bundle.posts[0]!, mediaRoot), true);
+      transitionReviewStatus(database, "c1", "p1", bundle.posts[0]!.version, "approved", mediaRoot);
+      assert.equal(getCampaignBundle(database, "c1")!.posts[0]!.reviewStatus, "approved");
+      assert.deepEqual(readFileSync(legacyPath), legacyBytes);
 
       const fks = database.client.prepare("PRAGMA foreign_key_list(draft_posts)").all() as Array<{
         table: string;
@@ -354,11 +396,12 @@ test("the migration preserves dependent rows and both foreign key chains", () =>
         database.client
           .prepare(
             `INSERT INTO draft_posts (id, campaign_id, ordinal, format, brand_id, objective, pillar,
-              proposed_date, visual_template, headline, body, footer, instagram_caption,
+              proposed_date, engagement_intent, content_structure, engagement_cta,
+              visual_template, headline, body, footer, instagram_caption,
               facebook_caption, hashtags, alt_text, review_status, render_status,
               latest_generation_attempt_id, created_at, updated_at)
              VALUES ('p2', 'c1', 1, 'image', 'record', 'education', 'record-keeping', '2026-08-01',
-              'problem', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'draft', 'pending', 'a1', 't', 't')`,
+              'save', 'checklist', 'Save this', 'useful-point', 'H', 'B', 'F', 'IC', 'FC', '[]', 'A', 'draft', 'pending', 'a1', 't', 't')`,
           )
           .run(),
       );

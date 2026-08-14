@@ -48,8 +48,8 @@ export type LegacyStaticPost = {
   format: "image";
   service: "instagram";
   instagramType: "post";
-  aspectRatio: "square";
-  template: LegacyVisualTemplate;
+  aspectRatio: "square" | "portrait";
+  template: LegacyVisualTemplate | "bold-hook" | "photo-led" | "useful-point" | "contrast" | "human-prompt" | "action";
   kicker: string;
   handle: string;
   palette: LegacyPalette;

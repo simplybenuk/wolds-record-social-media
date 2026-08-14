@@ -5,6 +5,7 @@ export type CampaignGenerationRequest = {
   postCount: number;
   startDate: string;
   endDate: string;
+  formatPreference?: "auto" | "image" | "carousel";
   brandPack: BrandPack;
 };
 

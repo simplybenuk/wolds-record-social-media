@@ -1,12 +1,12 @@
 {
-  "version": "2026-08-10.1",
+  "version": "2026-08-13.1",
   "id": "massage",
   "displayName": "Wolds Canine Massage Therapy",
-  "purpose": "Offer calm, practical canine massage therapy and rehabilitation support for dogs and their owners.",
+  "purpose": "Help dog owners understand calm, practical canine massage therapy and rehabilitation support for their own dogs.",
   "targetAudience": [
-    "Dog owners near Spilsby and Louth",
+    "Dog owners near Spilsby and Louth who are considering support for their own dog",
     "Owners of companion, working and sporting dogs",
-    "Veterinary professionals who need clear therapy communication"
+    "Owners looking for practical canine wellbeing, appointment and aftercare guidance"
   ],
   "tone": [
     "Warm",
@@ -156,10 +156,12 @@
     }
   ],
   "staticTemplates": [
-    "problem",
-    "feature",
-    "hook",
-    "cta"
+    "bold-hook",
+    "photo-led",
+    "useful-point",
+    "contrast",
+    "human-prompt",
+    "action"
   ],
   "visualStyle": {
     "palette": {
@@ -171,6 +173,11 @@
     },
     "headlineFont": "Georgia",
     "bodyFont": "Arial",
+    "aspectRatio": "portrait",
+    "canvas": { "width": 1080, "height": 1350 },
+    "photoTreatments": ["full-bleed", "split", "framed", "none"]
+  },
+  "legacyVisualStyle": {
     "imageOpacity": 18,
     "safeMode": "airy",
     "aspectRatio": "square"

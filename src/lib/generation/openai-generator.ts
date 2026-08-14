@@ -94,11 +94,23 @@ export class OpenAICampaignGenerator implements CampaignGenerator {
       startDate: request.post.proposedDate,
       endDate: request.post.proposedDate,
       brandPack: request.brandPack,
+      formatPreference: request.post.format,
     }, output.usage);
     if (campaign.posts[0]!.proposedDate !== request.post.proposedDate) {
       throw new GenerationError(
         "generation_domain_invalid",
         "The replacement changed the proposed date.",
+        undefined,
+        output.usage,
+      );
+    }
+    if (
+      campaign.posts[0]!.format !== request.post.format ||
+      campaign.posts[0]!.slides.length !== request.post.slides.length
+    ) {
+      throw new GenerationError(
+        "generation_domain_invalid",
+        "The replacement changed the persisted format or slide count.",
         undefined,
         output.usage,
       );
@@ -117,6 +129,7 @@ export class OpenAICampaignGenerator implements CampaignGenerator {
         startDate: request.startDate,
         endDate: request.endDate,
         brandPack: request.brandPack,
+        formatPreference: request.formatPreference ?? "image",
       });
     } catch (error) {
       if (error instanceof CampaignDomainValidationError) {
