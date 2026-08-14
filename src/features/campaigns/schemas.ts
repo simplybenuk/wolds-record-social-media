@@ -10,6 +10,7 @@ import {
   POST_FORMATS,
   SLIDE_ROLES,
   VISUAL_TEMPLATES,
+  SLIDE_COPY_LIMITS,
   type BrandPack,
 } from "./types.ts";
 
@@ -59,10 +60,10 @@ export const generatedSlideSchema = z
     ordinal: z.number().int().min(0).max(6),
     role: z.enum(SLIDE_ROLES),
     visualTemplate: z.enum(VISUAL_TEMPLATES),
-    headline: z.string().trim().min(1).max(90),
-    body: z.string().trim().min(1).max(280).nullable(),
+    headline: z.string().trim().min(1).max(SLIDE_COPY_LIMITS.headline),
+    body: z.string().trim().min(1).max(SLIDE_COPY_LIMITS.body).nullable(),
     emphasis: z.string().trim().min(1).max(50).nullable(),
-    footer: z.string().trim().min(1).max(100).nullable(),
+    footer: z.string().trim().min(1).max(SLIDE_COPY_LIMITS.footer).nullable(),
     photoAssetId: nonBlankTextSchema.nullable(),
     altText: z.string().trim().min(1).max(500),
   })

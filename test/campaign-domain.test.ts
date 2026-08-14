@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { CampaignDomainValidationError, validateGeneratedCampaign } from "../src/features/campaigns/domain-validation.ts";
 import { createCampaignId, createDraftPostId, createGenerationAttemptId, createSubmissionKey, newOpaqueId } from "../src/features/campaigns/ids.ts";
-import { brandPackSchema, campaignInputSchema, generatedCampaignSchema } from "../src/features/campaigns/schemas.ts";
-import type { BrandPack, GeneratedCampaign } from "../src/features/campaigns/types.ts";
+import { brandPackSchema, campaignInputSchema, generatedCampaignSchema, generatedSlideSchema } from "../src/features/campaigns/schemas.ts";
+import { SLIDE_COPY_LIMITS, type BrandPack, type GeneratedCampaign } from "../src/features/campaigns/types.ts";
 
 const rawPack = JSON.parse(await readFile(resolve("brands/record/brand.json"), "utf8"));
 const brandPack: BrandPack = brandPackSchema.parse(rawPack);
@@ -32,6 +32,18 @@ test("campaign input requires format preference and validates date order", () =>
   assert.equal(campaignInputSchema.safeParse({ ...parsed, endDate: "2026-09-09" }).success, false);
   const missing = { ...parsed } as Record<string, unknown>; delete missing.formatPreference;
   assert.equal(campaignInputSchema.safeParse(missing).success, false);
+});
+
+test("portrait copy limits accept their readable boundary and reject overflow", () => {
+  const boundary = {
+    ...slide(0, "standalone", "h".repeat(SLIDE_COPY_LIMITS.headline), "f".repeat(SLIDE_COPY_LIMITS.footer)),
+    body: "b".repeat(SLIDE_COPY_LIMITS.body),
+  };
+  assert.equal(generatedSlideSchema.safeParse(boundary).success, true);
+  for (const field of ["headline", "body", "footer"] as const) {
+    const limit = SLIDE_COPY_LIMITS[field];
+    assert.equal(generatedSlideSchema.safeParse({ ...boundary, [field]: "x".repeat(limit + 1) }).success, false);
+  }
 });
 
 test("domain IDs remain opaque and namespaced", () => {

@@ -1,12 +1,12 @@
 {
-  "version": "2026-08-10.1",
+  "version": "2026-08-13.1",
   "id": "academy",
   "displayName": "Wolds Canine Therapy Academy",
-  "purpose": "Provide flexible, practical learning for dog guardians and people developing canine therapy skills.",
+  "purpose": "Provide owner-first, flexible practical learning for people who want to support their own dogs, while also offering explicitly selected career learning.",
   "targetAudience": [
-    "Dog guardians who want practical learning at home",
-    "People beginning a canine therapy journey",
-    "Practitioners developing their canine massage knowledge"
+    "Dog owners and guardians who want practical learning for their own dogs at home",
+    "Dog lovers starting with introductory canine massage learning",
+    "People explicitly exploring the Academy's career course"
   ],
   "tone": [
     "Encouraging",

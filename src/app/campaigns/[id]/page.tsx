@@ -14,6 +14,7 @@ import {
   retryCampaignAction,
   transitionPostAction,
 } from "@/features/campaigns/actions";
+import { SLIDE_COPY_LIMITS } from "@/features/campaigns/types";
 import { canApproveCurrentPreview, getCampaignBundle } from "@/features/campaigns/repository";
 import { CAMPAIGN_OBJECTIVES, CONTENT_STRUCTURES, ENGAGEMENT_INTENTS, VISUAL_TEMPLATES } from "@/features/campaigns/types";
 import { createSubmissionKey } from "@/features/campaigns/ids";
@@ -192,10 +193,10 @@ export default async function CampaignPage({
                         <legend>Slide {slideIndex + 1} · {slide.role}</legend>
                         <input type="hidden" name={`slide.${slideIndex}.role`} value={slide.role} />
                         <label><span>Template</span><select name={`slide.${slideIndex}.visualTemplate`} defaultValue={slide.visualTemplate}>{VISUAL_TEMPLATES.map((v) => <option key={v}>{v}</option>)}</select></label>
-                        <label><span>Headline</span><input name={`slide.${slideIndex}.headline`} defaultValue={slide.headline} maxLength={90} required /></label>
+                        <label><span>Headline</span><input name={`slide.${slideIndex}.headline`} defaultValue={slide.headline} maxLength={SLIDE_COPY_LIMITS.headline} required /></label>
                         <label><span>Emphasis</span><input name={`slide.${slideIndex}.emphasis`} defaultValue={slide.emphasis ?? ""} maxLength={50} /></label>
-                        <label><span>Body</span><textarea name={`slide.${slideIndex}.body`} defaultValue={slide.body ?? ""} maxLength={280} /></label>
-                        <label><span>Footer</span><input name={`slide.${slideIndex}.footer`} defaultValue={slide.footer ?? ""} maxLength={100} /></label>
+                        <label><span>Body</span><textarea name={`slide.${slideIndex}.body`} defaultValue={slide.body ?? ""} maxLength={SLIDE_COPY_LIMITS.body} /></label>
+                        <label><span>Footer</span><input name={`slide.${slideIndex}.footer`} defaultValue={slide.footer ?? ""} maxLength={SLIDE_COPY_LIMITS.footer} /></label>
                         <label><span>Alt text</span><textarea name={`slide.${slideIndex}.altText`} defaultValue={slide.altText} maxLength={500} required /></label>
                         <label><span>Photo</span><select name={`slide.${slideIndex}.photoAssetId`} defaultValue={slide.photoAssetId ?? ""}><option value="">No photo</option>{brandPack.photoAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}</select></label>
                       </fieldset>

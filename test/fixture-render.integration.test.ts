@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -12,6 +13,62 @@ import {
 import { recordBrandPack } from "../src/lib/brand/record.ts";
 import { enabledBrandPacks } from "../src/lib/brand/packs.ts";
 import { runCampaignGeneration, runPostRegeneration } from "../src/lib/generation/service.ts";
+import { SLIDE_COPY_LIMITS } from "../src/features/campaigns/types.ts";
+// @ts-expect-error The shared legacy-compatible renderer intentionally remains plain ESM.
+import { createStaticImageRenderSession } from "../scripts/lib/static-image-renderer.mjs";
+
+test("the six portrait templates render complete, distinct boundary-copy compositions", { timeout: 120_000 }, async () => {
+  const brandPack = enabledBrandPacks().find((pack) => pack.id === "massage")!;
+  const photo = brandPack.photoAssets.find((asset) => asset.id === "dendoktoor-basset-hound")!;
+  const renderer = await createStaticImageRenderSession({ htmlPath: resolve("instagram.html") });
+  const hashes = new Set<string>();
+  const atLimit = (seed: string, limit: number, sentinel: string) => {
+    const prefixLength = limit - sentinel.length;
+    return (seed + " ").repeat(Math.ceil(prefixLength / (seed.length + 1))).slice(0, prefixLength) + sentinel;
+  };
+  const headline = atLimit("Owner friendly headline", SLIDE_COPY_LIMITS.headline, "[HEAD-END]");
+  const body = atLimit("Complete practical guidance for your dog remains visible", SLIDE_COPY_LIMITS.body, "[BODY-END]");
+  const footer = atLimit("Get in touch to discuss your dog's needs", SLIDE_COPY_LIMITS.footer, "[CTA-END]");
+
+  try {
+    for (const template of brandPack.staticTemplates) {
+      const png: Buffer = await renderer.render({
+        id: `template-${template}`,
+        brand: brandPack.id,
+        format: "image",
+        service: "instagram",
+        instagramType: "post",
+        aspectRatio: "portrait",
+        template,
+        kicker: brandPack.displayName,
+        handle: `@${brandPack.instagramHandle}`,
+        palette: brandPack.visualStyle.palette,
+        fonts: {
+          headlineFont: brandPack.visualStyle.headlineFont,
+          bodyFont: brandPack.visualStyle.bodyFont,
+        },
+        headline,
+        emphasis: "",
+        body,
+        footer,
+        logoPath: resolve(brandPack.logo.path),
+        photoPath: resolve(photo.path),
+        imageOpacity: 100,
+        safeMode: "airy",
+        caption: "Representative template regression.",
+        hashtags: [],
+        altText: `${template} template regression`,
+      });
+      assert.equal(png.readUInt32BE(16), 1080);
+      assert.equal(png.readUInt32BE(20), 1350);
+      hashes.add(createHash("sha256").update(png).digest("hex"));
+    }
+  } finally {
+    await renderer.close();
+  }
+
+  assert.equal(hashes.size, brandPack.staticTemplates.length);
+});
 
 test("a three-post fixture campaign persists and renders real portrait PNG sets", { timeout: 120_000 }, async () => {
   const database = createDatabase(":memory:");

@@ -1,14 +1,85 @@
 # Independent review: Instagram engagement creative system
 
+> Review round 5 (2026-08-13): independent re-review verified B7 closed, repeated every project gate and the isolated Massage mobile flow, and found no remaining blocking or should-fix defect. The change is `READY FOR HUMAN TESTING`.
+
+> Review round 4 (2026-08-13): independent review verified the R3 audience split and normal-copy visual variety, but found that the new portrait text fitter silently discards schema-valid copy and can overlap the action CTA. The change is `NOT READY FOR HUMAN TESTING` and returns to development for B7.
+
+> Human-test remediation (2026-08-13): Olivia's testing found incorrect practitioner-facing Massage copy and portrait output that felt too corporate and repetitive. IECS-R3 has returned the change to development, and the round 3 verdict below applies only to the pre-remediation implementation. Independent re-review is required before human testing resumes.
+
 > Review round 3 (2026-08-12): independent re-review verified B6 and S3 closed, repeated every project gate and the isolated mobile flow, and found no remaining blocking or should-fix defect. The change is `READY FOR HUMAN TESTING`.
 
 > Review round 2 (2026-08-12): the remediation closes B1-B5 and S1-S2 for new portrait/carousel posts, but independent review found a blocking migrated-square approval regression. The current verdict remains `NOT READY FOR HUMAN TESTING`.
 
 - **Status:** READY FOR HUMAN TESTING
 - **Change slug:** `instagram-engagement-creative-system`
-- **Reviewed:** 2026-08-12
+- **Reviewed:** 2026-08-13
 - **Approved specification:** `plans/specs/instagram-engagement-creative-system.md`
 - **Development artifact:** `plans/tasks/instagram-engagement-creative-system.md`
+
+## Round 5 verdict
+
+No blocking or should-fix findings remain. The boundary-copy remediation removes silent clipping, limits accepted copy through one schema/UI contract, and gives each portrait text surface a tested non-overlapping region. The owner/practitioner audience correction and six-template visual variety remain intact.
+
+### B7 closure evidence
+
+- **No silent truncation:** `portraitLines` preserves overlong tokens by breaking them character-by-character; `fitPortraitText` returns every wrapped line or throws a render failure when the validated region cannot contain it. The former `lines.slice(...)` loss path is absent (`instagram.html:1339-1392`).
+- **One accepted-copy contract:** `SLIDE_COPY_LIMITS` defines 72 headline, 200 body and 80 footer characters; `generatedSlideSchema` and the review edit controls both consume those constants (`src/features/campaigns/types.ts:52`, `src/features/campaigns/schemas.ts:58-69`, `src/app/campaigns/[id]/page.tsx:196-200`). Exact limits pass and every field at +1 fails in the focused schema regression.
+- **Boundary rendering and collision safety:** all six real Massage templates rendered at the exact limits with `[HEAD-END]`, `[BODY-END]` and `[CTA-END]` visible at 1080x1350. Independent visual inspection confirmed complete sentinel text, readable hierarchy, decorative separation, and no body/CTA collision. In particular, the action body ends at y=895 before the fixed CTA panel begins at y=925; the footer fits within the panel's dedicated y=970-1060 region (`instagram.html:1637-1643`).
+- **Regression coverage:** the real-render integration exercises all six template IDs at the shared boundaries and proves distinct outputs (`test/fixture-render.integration.test.ts:20-70`); the schema regression covers exact-boundary acceptance and overflow rejection (`test/campaign-domain.test.ts:37-47`). Audience pack/prompt/fixture regressions continue separating owner-first Massage/Academy from practitioner-facing Record.
+
+### Round 5 validation
+
+- Independently passed `npm run check`; `npm test` (63 legacy and 61 TypeScript tests); `npm run posts:check` (0 ready, 0 blocked, 20 sent); `npm run lint:compositions` (3 ok); `npm run build`; and `git diff --check`.
+- Independently passed the complete Massage `npm run verify:mobile` flow at 390x844 against the production build and an isolated SQLite database. The successful script covers creation, every carousel slide, edit/reload durability, regeneration, review transitions, stale-write/retry behavior, keyboard focus, horizontal overflow and console errors.
+- The representative legacy square render remains byte-identical at MD5 `17f2aa4ff9326356eaf434e67a9d6ba3`. `posts.json` remains byte-unchanged at SHA-256 `7c3be88d874d1cedf41bf12f8af95e25a336e84405e3336c392d4f4f058fa0dc` with an empty diff. No changed application path invokes upload, scheduling or publication services.
+
+### Residual risk and handoff
+
+Automated and independent visual review establish complete, non-overlapping boundary rendering, but only Ben or Olivia can judge whether representative fixture and bounded live campaigns reach the desired Canva-like creative quality and audience tone. Human testing should focus on Massage owner language, Academy owner-first behavior and explicit career-brief exception, Record practitioner language, CTA completeness, and phone-scale readability across all six treatments. Successful human output testing hands the accepted change to `bwh-archive-change`; any further output defect returns it to `bwh-development`.
+
+## Round 4 verdict
+
+The audience correction is ready in isolation: Massage now addresses owners, Academy defaults to owners/guardians unless the brief explicitly selects career or practitioner learning, and Record remains practitioner-facing. Representative short-copy renders also demonstrate six materially different portrait compositions. The R3 package is nevertheless not ready for human testing because schema-valid boundary copy can become an incomplete or visually obscured publication surface.
+
+### B7. Portrait layouts silently discard valid copy and can obscure the final CTA
+
+`fitPortraitText` stops shrinking at a template-specific minimum font size and then returns `lines.slice(0, maxLines)` without reporting overflow. The persisted/rendered post remains preview-ready because the PNG is structurally valid even though its visible words no longer match the validated slide. Fixed template regions compound the issue: the `action` layout draws its CTA panel at a constant vertical position after body copy, so a longer valid body can be painted underneath the panel.
+
+Independent renders used a 90-character headline, 278-character body, and 96-character footer, all within `generatedSlideSchema` limits (90/280/100). Results included:
+
+- `bold-hook`, `photo-led`, `useful-point`, `contrast`, and `human-prompt` cut the body before its final safety guidance;
+- `contrast` also cut the headline and CTA;
+- `bold-hook` and `photo-led` cut the CTA;
+- `action` painted body text into/behind the CTA panel, and its fitter also discarded body text.
+
+This is blocking because R3 requires the visible slides to carry their complete meaning and exact engagement CTA, R4 requires readable purpose-specific layouts, and the renderer currently accepts these incomplete surfaces as ready 1080x1350 previews. It is especially material for carousel action slides, where the final visual must present the exact post CTA rather than a clipped prefix.
+
+Evidence:
+
+- `src/features/campaigns/schemas.ts:57-68` permits the reproduced field lengths.
+- `instagram.html:1345-1356` silently slices overflowing fitted lines.
+- `instagram.html:1439-1608` uses fixed line caps/regions for every portrait template; the action CTA panel is fixed at y=930 while body placement depends on the fitted headline.
+- `test/fixture-render.integration.test.ts:16-63` verifies dimensions and distinct hashes using only short copy; it does not assert full text fit, CTA visibility, overlap safety, or boundary-length behavior.
+- Diagnostic renders are outside the repository at `/tmp/iecs-r3-review/max/`; the clearest action and contrast failures were visually inspected at 1080x1350.
+
+Required correction: make every accepted slide render its complete visible headline/body/footer without overlap, or narrow the shared/per-template validation limits so overflow is rejected before persistence/render readiness. Add focused boundary-copy coverage for all six templates, including an exact final CTA assertion and action-panel collision protection; do not silently truncate approved copy.
+
+### R3 acceptance and regression evidence
+
+- **Audience:** the Massage pack now contains owner-only audience entries and its developer prompt explicitly excludes practitioners; its fixture is owner-facing. Academy is owner-first in the pack, prompt, and fixture, with the practitioner/career exception requiring explicit brief language. Record's developer prompt preserves its practitioner default. This matches the project owner's direction and the public Massage/About and Academy/About evidence (the Academy publicly describes both dog guardians and a professional path).
+- **Normal-copy creative variety:** all six Massage templates were independently rendered and visually inspected at 1080x1350. Photo-led, editorial hook, useful point, contrast, conversation prompt, and action treatments are materially distinct; photographs are full-strength or framed rather than uniformly washed out; pack palette, logo, and approved asset resolution are preserved.
+- **Safety and isolation:** no changed application path invokes Buffer, Cloudinary, Meta, upload, scheduling, or publication services. Brand prompt safety rules remain beneath untrusted briefs, and photo-rights notices remain visible in the mobile review surface.
+- **Legacy behavior:** the representative square render remains byte-identical at MD5 `17f2aa4ff9326356eaf434e67a9d6ba3`. `posts.json` remains byte-unchanged at SHA-256 `7c3be88d874d1cedf41bf12f8af95e25a336e84405e3336c392d4f4f058fa0dc` with an empty diff.
+
+### Round 4 validation
+
+- Independently passed `npm run check`; `npm test` (63 legacy and 60 TypeScript tests); `npm run posts:check` (0 ready, 0 blocked, 20 sent); `npm run lint:compositions` (3 ok); `npm run build`; and `git diff --check`.
+- Independently passed the complete Massage `npm run verify:mobile` flow at 390x844 against the production build and an isolated SQLite database: three previews, all carousel slides reachable, caption and visual edits, reload durability, regeneration, reject/draft, stale-write rejection, render/generation retry, keyboard focus, no horizontal overflow, and zero console errors.
+- Independent normal and boundary-copy renders covered all six portrait templates. The boundary run is the required-validation failure described in B7; the existing automated suite does not detect it.
+
+### Residual risk and handoff
+
+Return B7 to `bwh-development`; human output testing remains paused. After the fitter/layout correction and focused regressions, rerun every project gate and repeat `bwh-agent-review`. Once a later review returns `READY FOR HUMAN TESTING`, successful human testing hands the accepted change to `bwh-archive-change`, while any further output defect returns it to `bwh-development`.
 
 ## Round 3 verdict
 

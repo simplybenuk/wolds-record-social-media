@@ -12,7 +12,7 @@ npx playwright-core install chromium
 cp .env.example .env
 ```
 
-Fixture mode is deterministic and makes no OpenAI request. Choose the brand and creative-format preference when creating a campaign; both are fixed for that campaign. The brand controls copy rules, pillars, logo, palette and photo allow-list. Automatic fixture campaigns with at least two posts deliberately include both an image and a carousel so the complete review flow remains testable:
+Fixture mode is deterministic and makes no OpenAI request. Choose the brand and creative-format preference when creating a campaign; both are fixed for that campaign. The brand controls copy rules, audience priority, pillars, logo, palette and photo allow-list. Massage posts address dog owners, Academy posts default to owners and guardians unless a brief explicitly selects career or practitioner learning, and Record posts address practitioners. Six materially distinct portrait composition families provide photo-led, editorial, practical, comparison, conversation and action treatments. Automatic fixture campaigns with at least two posts deliberately include both an image and a carousel so the complete review flow remains testable:
 
 ```text
 GENERATION_MODE=fixture

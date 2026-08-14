@@ -49,6 +49,7 @@ export const VISUAL_TEMPLATES = [
   "bold-hook", "photo-led", "useful-point", "contrast", "human-prompt", "action",
 ] as const;
 export const SLIDE_ROLES = ["standalone", "cover", "content", "action"] as const;
+export const SLIDE_COPY_LIMITS = Object.freeze({ headline: 72, body: 200, footer: 80 });
 export const GENERATION_MODES = ["live", "fixture"] as const;
 export const CAMPAIGN_STATUSES = ["pending", "review", "failed"] as const;
 export const REVIEW_STATUSES = ["draft", "approved", "rejected"] as const;

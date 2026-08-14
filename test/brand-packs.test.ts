@@ -43,6 +43,26 @@ test("every enabled pack loads through one schema", () => {
   }
 });
 
+test("brand audience priorities keep owner brands separate from Record", () => {
+  const massage = requireBrandPack("massage");
+  const academy = requireBrandPack("academy");
+  const record = requireBrandPack("record");
+
+  assert.ok(massage.targetAudience.every((audience) => /owner/i.test(audience)));
+  assert.match(academy.targetAudience[0] ?? "", /owners|guardians/i);
+  assert.match(academy.purpose, /owner-first/i);
+  assert.ok(record.targetAudience.every((audience) => /practitioner/i.test(audience)));
+
+  const massagePrompt = readFileSync(resolve("brands/massage/prompt.md"), "utf8");
+  const academyPrompt = readFileSync(resolve("brands/academy/prompt.md"), "utf8");
+  const recordPrompt = readFileSync(resolve("brands/record/prompt.md"), "utf8");
+  assert.match(massagePrompt, /reader is not a therapist or practitioner/i);
+  assert.match(massagePrompt, /your dog/i);
+  assert.match(academyPrompt, /default to a dog owner or guardian/i);
+  assert.match(academyPrompt, /only address aspiring or developing therapists when the brief explicitly/i);
+  assert.match(recordPrompt, /only enabled brand whose default social audience is practitioners/i);
+});
+
 test("every enabled pack has readable approved assets and brand-scoped fixture copy", async () => {
   for (const pack of enabledBrandPacks()) {
     for (const asset of [pack.logo, ...pack.photoAssets]) {

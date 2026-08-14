@@ -383,3 +383,29 @@ Verification: independently passed check, 63 legacy + 58 TypeScript tests, posts
 Reel lint, build, diff/hash checks, isolated 390x844 mobile flow, and extra PNG integrity probes.
 Manual follow-up: human-test representative brand/template output and migrated square review;
 success hands off to archive, while any defect returns to development.
+
+2026-08-13 05:17 UTC — remediated audience targeting and portrait creative quality
+Files changed: brand packs/prompts, fixture copy, six-family portrait renderer, focused tests,
+README.md, automation plan, task/review traceability, and this append-only log.
+Verification: check; 63 legacy + 60 TypeScript tests; posts check (0/0/20); Reel lint
+(3 ok); build; six 1080x1350 visual inspections; isolated Massage 390x844 mobile flow;
+posts.json hash unchanged; git diff --check passed.
+Manual follow-up: repeat independent agent review before human testing; no live generation,
+upload, publication, commit, push, or pull-request action was performed here.
+
+2026-08-13 05:45 UTC — fourth independent review returned R3 to development
+Files changed: plans/reviews/instagram-engagement-creative-system.md and this append-only log.
+Verification: independently passed check, 63 legacy + 60 TypeScript tests, posts check,
+Reel lint, build, legacy/hash checks, and isolated Massage 390x844 mobile flow; inspected
+normal and boundary-length renders for all six templates.
+Manual follow-up: fix silent portrait-copy truncation and action-panel overlap, add boundary
+regressions, rerun all gates, then repeat agent review; human testing remains paused.
+2026-08-13 06:00 UTC — Resolved IECS review B7 in `instagram.html`, campaign copy schema/UI, focused tests, and the development task: removed silent portrait clipping, added shared readable copy limits, explicit collision-free regions, exact-boundary six-template renders, and moved decorative elements clear of copy. Verification passed: `npm run check`; `npm test` (63 legacy, 61 TypeScript); posts check; Reel lint; production build; `git diff --check`; and isolated Massage mobile flow at 390×844 with no overflow/console errors. `posts.json` unchanged. Manual follow-up: fresh independent agent review before human testing.
+2026-08-13 06:05 UTC — fifth independent review cleared IECS-R4 for human testing.
+Files changed: plans/reviews/instagram-engagement-creative-system.md and this append-only log.
+Verification: independently passed check, 63 legacy + 61 TypeScript tests, posts check,
+Reel lint, production build, legacy/hash checks, exact-boundary visual inspection of all six
+templates, and isolated Massage 390x844 mobile flow. Manual follow-up: Ben or Olivia should
+test owner/practitioner tone, creative quality, CTA completeness, and phone readability;
+acceptance hands off to archive, while any output defect returns to development.
+2026-08-13 06:07 UTC — Deployed the independently cleared production build for LAN human testing at `http://192.168.1.188:3000/campaigns/new`; direct host check returned HTTP 200. No live generation, upload, scheduling, publication, commit, push, or PR action was performed. Manual follow-up: keep the host session running during Ben/Olivia testing.
